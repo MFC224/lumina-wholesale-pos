@@ -290,9 +290,9 @@ export function sanitizeImportReportForRole(report: ImportReport, role: Role): I
   return {
     ...report,
     productosAgrupados: report.productosAgrupados.map((prod) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { costo, ...rest } = prod;
-      return rest;
+      const sanitized = { ...prod };
+      delete (sanitized as Record<string, unknown>).costo;
+      return sanitized as ImportProductGroup;
     }),
   };
 }

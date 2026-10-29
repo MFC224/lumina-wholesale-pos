@@ -80,8 +80,8 @@ export function sanitizeProductForRole<T extends ProductWithCost>(
     return { ...product };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { costo, ...sanitized } = product;
+  const sanitized = { ...product };
+  delete (sanitized as Record<string, unknown>).costo;
   return sanitized as SanitizedProduct<T>;
 }
 
