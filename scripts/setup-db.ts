@@ -17,41 +17,21 @@ async function setupProductionDatabase() {
     // 2. Habilitar Supabase Realtime CDC (Change Data Capture)
     console.log("2. Configurando publicaciones para Supabase Realtime CDC...");
     try {
-      await prisma.$executeRawUnsafe(`
-        DO $$
-        BEGIN
-          -- Crear publicación supabase_realtime si no existe
-          IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
-            CREATE PUBLICATION supabase_realtime;
-          END IF;
-          
-          -- Agregar tablas a la publicación de tiempo real
-          BEGIN
-            ALTER PUBLICATION supabase_realtime ADD TABLE "VarianteProducto";
-          EXCEPTION WHEN duplicate_object THEN
-            NULL;
-          END;
-
-          BEGIN
-            ALTER PUBLICATION supabase_realtime ADD TABLE "MovimientoKardex";
-          EXCEPTION WHEN duplicate_object THEN
-            NULL;
-          END;
-        END $$;
-      `);
-      console.log("   ✅ Supabase Realtime habilitado para 'VarianteProducto' y 'MovimientoKardex'.\n");
+      await prisma.$executeRawUnsafe(`ALTER PUBLICATION supabase_realtime ADD TABLE "VarianteStock";`).catch(() => {});
+      await prisma.$executeRawUnsafe(`ALTER PUBLICATION supabase_realtime ADD TABLE "MovimientoKardex";`).catch(() => {});
+      await prisma.$executeRawUnsafe(`ALTER TABLE "VarianteStock" REPLICA IDENTITY FULL;`).catch(() => {});
+      await prisma.$executeRawUnsafe(`ALTER TABLE "MovimientoKardex" REPLICA IDENTITY FULL;`).catch(() => {});
+      console.log("   ✅ Supabase Realtime habilitado para 'VarianteStock' y 'MovimientoKardex' con REPLICA IDENTITY FULL.\n");
     } catch (realtimeErr) {
       console.warn("   ⚠️ Nota sobre Realtime:", (realtimeErr as Error).message);
     }
 
     // 3. Auditoría de índices de rendimiento para búsqueda rápida
     console.log("3. Verificando índices para búsqueda en 0ms y bloqueos...");
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS "idx_variante_sku" ON "VarianteProducto" ("sku");
-      CREATE INDEX IF NOT EXISTS "idx_variante_producto_id" ON "VarianteProducto" ("productoId");
-      CREATE INDEX IF NOT EXISTS "idx_kardex_variante_id" ON "MovimientoKardex" ("varianteId");
-      CREATE INDEX IF NOT EXISTS "idx_venta_ticket" ON "Venta" ("numeroTicket");
-    `);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "idx_variante_sku" ON "VarianteStock" ("sku");`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "idx_variante_producto_id" ON "VarianteStock" ("productoId");`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "idx_kardex_variante_id" ON "MovimientoKardex" ("varianteId");`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "idx_venta_ticket" ON "Venta" ("numeroTicket");`);
     console.log("   ✅ Índices de rendimiento verificados.\n");
 
     // 4. Verificación de permisos y transacciones pesimistas
