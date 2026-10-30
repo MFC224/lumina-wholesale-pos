@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { UserProfile } from "@/types/auth";
 import { formatPEN } from "@/lib/utils";
+import { printThermalReceipt } from "@/lib/pos/thermal-receipt";
 import {
   Receipt,
   X,
@@ -13,6 +14,7 @@ import {
   RotateCcw,
   Loader2,
   ShieldAlert,
+  Printer,
 } from "lucide-react";
 
 interface SaleDetail {
@@ -34,6 +36,7 @@ interface SaleItem {
   total: number;
   subtotal: number;
   descuento: number;
+  tipoDescuento?: string;
   metodoPago: string;
   montoRecibido: number;
   vuelto: number;
@@ -128,6 +131,32 @@ export function SalesHistoryModal({
     } finally {
       setProcessingVoid(false);
     }
+  };
+
+  const handlePrintSale = (sale: SaleItem) => {
+    printThermalReceipt({
+      numeroTicket: sale.numeroTicket,
+      cajeroNombre: sale.cajero,
+      fecha: sale.createdAt,
+      metodoPago: sale.metodoPago,
+      subtotal: sale.subtotal,
+      descuento: sale.descuento,
+      tipoDescuento: sale.tipoDescuento,
+      total: sale.total,
+      montoRecibido: sale.montoRecibido,
+      vuelto: sale.vuelto,
+      anulada: sale.estado === "ANULADA",
+      motivoAnulacion: sale.motivoAnulacion,
+      items: (sale.detalles || []).map((d) => ({
+        nombre: d.nombreProducto,
+        sku: d.sku,
+        talla: d.talla,
+        color: d.color,
+        cantidad: d.cantidad,
+        precioUnitario: d.precioUnitario,
+        subtotal: d.subtotal,
+      })),
+    });
   };
 
   return (
@@ -281,28 +310,39 @@ export function SalesHistoryModal({
                           )}
                         </td>
                         <td className="py-2.5 px-3 text-right">
-                          {!isAnulada && (
-                            currentUser.rol === "ADMIN" ? (
-                              <button
-                                onClick={() => {
-                                  setVoidingSaleId(sale.id);
-                                  setVoidMotivo("");
-                                }}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg border border-red-200 transition"
-                              >
-                                <RotateCcw className="w-3 h-3" /> Anular
-                              </button>
-                            ) : (
-                              <span className="text-[10px] text-slate-400 italic">
-                                Solo Admin
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handlePrintSale(sale)}
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition shadow-xs"
+                              title="Reimprimir ticket térmico en 80mm/58mm"
+                            >
+                              <Printer className="w-3 h-3 text-slate-500" />
+                              <span>Reimprimir</span>
+                            </button>
+
+                            {!isAnulada && (
+                              currentUser.rol === "ADMIN" ? (
+                                <button
+                                  onClick={() => {
+                                    setVoidingSaleId(sale.id);
+                                    setVoidMotivo("");
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg border border-red-200 transition"
+                                >
+                                  <RotateCcw className="w-3 h-3" /> Anular
+                                </button>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 italic">
+                                  Solo Admin
+                                </span>
+                              )
+                            )}
+                            {isAnulada && sale.motivoAnulacion && (
+                              <span className="text-[10px] text-slate-400 block truncate max-w-[120px] text-right" title={sale.motivoAnulacion}>
+                                {sale.motivoAnulacion}
                               </span>
-                            )
-                          )}
-                          {isAnulada && sale.motivoAnulacion && (
-                            <span className="text-[10px] text-slate-400 block truncate max-w-[150px] text-right" title={sale.motivoAnulacion}>
-                              {sale.motivoAnulacion}
-                            </span>
-                          )}
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

@@ -10,6 +10,7 @@ import {
   BILLETES_PERU,
 } from "@/lib/pos/calculations";
 import { searchInMemoryCatalog, SearchableProduct, SearchableVariant } from "@/lib/pos/search";
+import { printThermalReceipt } from "@/lib/pos/thermal-receipt";
 import {
   Search,
   ShoppingCart,
@@ -69,6 +70,58 @@ export function LuminaPosTerminal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completedSale, setCompletedSale] = useState<any | null>(null);
+  const [customerName, setCustomerName] = useState<string>("Público General");
+  const [customerDoc, setCustomerDoc] = useState<string>("");
+
+  const playScannerBeep = () => {
+    try {
+      if (typeof window !== "undefined" && (window.AudioContext || (window as any).webkitAudioContext)) {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+      }
+    } catch {
+      // Audio no permitido o silenciado
+    }
+  };
+
+  const handlePrintReceipt = useCallback(() => {
+    if (!completedSale) return;
+    const items = (completedSale.detalles || completedSale.items || []).map((i: any) => ({
+      nombre: i.nombre || i.nombreProducto || "Artículo",
+      sku: i.sku || "SKU",
+      talla: i.talla,
+      color: i.color,
+      cantidad: i.cantidad || 1,
+      precioUnitario: i.precioUnitario || 0,
+      subtotal: (i.cantidad || 1) * (i.precioUnitario || 0),
+    }));
+
+    printThermalReceipt({
+      numeroTicket: completedSale.numeroTicket,
+      cajeroNombre: currentUser.nombre,
+      metodoPago: completedSale.metodoPago,
+      subtotal: completedSale.subtotal || completedSale.total,
+      descuento: completedSale.descuento || 0,
+      tipoDescuento: completedSale.tipoDescuento,
+      total: completedSale.total,
+      montoRecibido: completedSale.montoRecibido ?? completedSale.financials?.montoRecibido,
+      vuelto: completedSale.vuelto ?? completedSale.financials?.vuelto,
+      clienteNombre: completedSale.clienteNombre || customerName,
+      clienteDocumento: completedSale.clienteDocumento || customerDoc,
+      items,
+      fecha: completedSale.createdAt || new Date(),
+    });
+  }, [completedSale, currentUser, customerName, customerDoc]);
 
   // Filtrado difuso en memoria (0ms)
   const filteredProducts = searchInMemoryCatalog(catalog, searchQuery, {
@@ -103,6 +156,12 @@ export function LuminaPosTerminal({
   // Atajos globales de teclado (Keyboard-First POS)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // F11 o P para imprimir ticket térmico si el modal de venta exitosa está visible
+      if (completedSale && (e.key === "F11" || e.key.toLowerCase() === "p")) {
+        e.preventDefault();
+        handlePrintReceipt();
+        return;
+      }
       // F2 o '/' para enfocar buscador
       if (e.key === "F2" || (e.key === "/" && document.activeElement !== searchInputRef.current)) {
         e.preventDefault();
@@ -115,6 +174,16 @@ export function LuminaPosTerminal({
         if (cart.length > 0 && !isProcessing && financials.esMontoSuficiente) {
           handleExecuteSale();
         }
+      }
+      // F9 para seleccionar pago en Efectivo
+      else if (e.key === "F9") {
+        e.preventDefault();
+        setPaymentMethod("EFECTIVO");
+      }
+      // F10 para seleccionar pago digital (Yape)
+      else if (e.key === "F10") {
+        e.preventDefault();
+        setPaymentMethod("YAPE");
       }
       // Esc para limpiar búsqueda o cerrar modales
       else if (e.key === "Escape") {
@@ -164,6 +233,44 @@ export function LuminaPosTerminal({
         ];
       }
     });
+  };
+
+  // Detección y adición por pistola lectora de código de barras o Enter directo
+  const handleBarcodeOrEnter = (query: string) => {
+    const trimmed = query.trim().toUpperCase();
+    if (!trimmed) return;
+
+    let foundProd: SearchableProduct | null = null;
+    let foundVar: SearchableVariant | null = null;
+
+    for (const prod of catalog) {
+      const v = prod.variantes.find(
+        (vr) =>
+          vr.sku.toUpperCase() === trimmed ||
+          (prod.codigoSku && prod.codigoSku.toUpperCase() === trimmed)
+      );
+      if (v) {
+        foundProd = prod;
+        foundVar = v;
+        break;
+      }
+    }
+
+    if (!foundVar && filteredProducts.length === 1 && filteredProducts[0].variantes.length === 1) {
+      foundProd = filteredProducts[0];
+      foundVar = foundProd.variantes[0];
+    }
+
+    if (foundProd && foundVar) {
+      if (foundVar.stockActual > 0) {
+        playScannerBeep();
+        addToCart(foundProd, foundVar);
+        setSearchQuery("");
+      } else {
+        setErrorMessage(`El artículo ${foundVar.sku} está AGOTADO.`);
+        setTimeout(() => setErrorMessage(null), 3000);
+      }
+    }
   };
 
   // Modificar cantidad en carrito
@@ -239,6 +346,8 @@ export function LuminaPosTerminal({
           ...data.venta,
           items: [...cart],
           financials: { ...financials },
+          clienteNombre: customerName,
+          clienteDocumento: customerDoc,
         });
         clearCart();
         if (onSaleCompleted) onSaleCompleted();
@@ -267,11 +376,17 @@ export function LuminaPosTerminal({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar producto, SKU, color, talla o ubicación... (Presiona F2)"
-              className="w-full pl-11 pr-20 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#081C6C] text-slate-900 font-medium"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleBarcodeOrEnter(searchQuery);
+                }
+              }}
+              placeholder="Escanear código de barras con pistola láser o buscar... (F2)"
+              className="w-full pl-11 pr-24 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#081C6C] text-slate-900 font-medium"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono bg-slate-200/70 text-slate-600 px-2 py-0.5 rounded border border-slate-300">
-              F2
+              F2 · Enter
             </span>
           </div>
 
@@ -607,6 +722,29 @@ export function LuminaPosTerminal({
               </div>
             </div>
 
+            {/* Identificación de Cliente (Opcional) */}
+            <div className="pt-0.5">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">
+                Cliente / Comprobante (Opcional)
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  placeholder="DNI / RUC"
+                  value={customerDoc}
+                  onChange={(e) => setCustomerDoc(e.target.value)}
+                  className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-[#081C6C]"
+                />
+                <input
+                  type="text"
+                  placeholder="Nombre Cliente"
+                  value={customerName === "Público General" && customerDoc ? "" : customerName}
+                  onChange={(e) => setCustomerName(e.target.value || "Público General")}
+                  className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081C6C]"
+                />
+              </div>
+            </div>
+
             {/* Billetes rápidos en Soles para pago en efectivo */}
             {paymentMethod === "EFECTIVO" && financials.total > 0 && (
               <div className="pt-1">
@@ -760,11 +898,21 @@ export function LuminaPosTerminal({
               )}
             </div>
 
-            <div className="pt-2 flex items-center gap-2">
+            <div className="pt-2 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={handlePrintReceipt}
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2"
+                title="Imprimir ticket térmico en 80mm o 58mm (F11 / P)"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Imprimir Ticket Térmico (F11 / P)</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setCompletedSale(null)}
-                className="flex-1 py-2.5 bg-[#081C6C] hover:bg-[#0E2A9E] text-white text-xs font-bold rounded-xl transition"
+                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
               >
                 Nueva Venta (Esc)
               </button>
