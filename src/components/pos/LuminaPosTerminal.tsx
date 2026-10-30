@@ -454,31 +454,134 @@ export function LuminaPosTerminal({
             )}
           </div>
 
-          {/* Descuentos Rápidos (Clearance Markdowns) */}
+          {/* Descuentos Rápidos (Porcentaje % o Monto Fijo en Soles S/.) */}
           <div className="p-4 bg-slate-50 border-t border-slate-200 space-y-3">
             <div>
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
-                Descuento Rápido de Remate
-              </span>
-              <div className="grid grid-cols-5 gap-1.5">
-                {QUICK_DISCOUNTS.map((d) => (
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Descuento de Remate
+                </span>
+                <div className="flex items-center gap-1 bg-slate-200/70 p-0.5 rounded-lg text-[10px] font-bold">
                   <button
-                    key={d.label}
                     type="button"
                     onClick={() => {
-                      setDiscountType(d.type);
-                      setDiscountValue(d.value);
+                      setDiscountType(discountValue > 0 ? "PORCENTAJE" : "NINGUNO");
                     }}
-                    className={`py-1 rounded-lg text-xs font-bold border transition ${
-                      discountType === d.type && discountValue === d.value
+                    className={`px-2 py-0.5 rounded transition ${
+                      discountType === "PORCENTAJE" || (discountType === "NINGUNO" && discountValue === 0)
+                        ? "bg-white text-[#081C6C] shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Porcentaje (%)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDiscountType("MONTO_FIJO");
+                      if (discountValue === 0) setDiscountValue(5);
+                    }}
+                    className={`px-2 py-0.5 rounded transition ${
+                      discountType === "MONTO_FIJO"
+                        ? "bg-white text-[#081C6C] shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Monto Fijo (S/.)
+                  </button>
+                </div>
+              </div>
+
+              {discountType === "MONTO_FIJO" ? (
+                /* Selector de Monto Fijo en Soles */
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDiscountType("NINGUNO");
+                      setDiscountValue(0);
+                    }}
+                    className={`py-1 px-2.5 rounded-lg text-xs font-bold border transition ${
+                      discountValue === 0
                         ? "bg-[#081C6C] text-white border-[#081C6C]"
                         : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
                     }`}
                   >
-                    {d.label}
+                    Sin Desc.
                   </button>
-                ))}
-              </div>
+                  {[5, 10, 15, 20, 50].map((monto) => (
+                    <button
+                      key={monto}
+                      type="button"
+                      onClick={() => {
+                        setDiscountType("MONTO_FIJO");
+                        setDiscountValue(monto);
+                      }}
+                      className={`py-1 px-2.5 rounded-lg text-xs font-bold border transition ${
+                        discountType === "MONTO_FIJO" && discountValue === monto
+                          ? "bg-[#081C6C] text-white border-[#081C6C]"
+                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      -S/. {monto}
+                    </button>
+                  ))}
+                  <div className="flex items-center gap-1 ml-auto">
+                    <span className="text-[11px] text-slate-500 font-bold">S/.</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={discountType === "MONTO_FIJO" && discountValue > 0 ? discountValue : ""}
+                      placeholder="Libre"
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setDiscountType(val > 0 ? "MONTO_FIJO" : "NINGUNO");
+                        setDiscountValue(val);
+                      }}
+                      className="w-16 px-1.5 py-1 text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081C6C]"
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* Selector de Porcentaje */
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {QUICK_DISCOUNTS.map((d) => (
+                    <button
+                      key={d.label}
+                      type="button"
+                      onClick={() => {
+                        setDiscountType(d.type);
+                        setDiscountValue(d.value);
+                      }}
+                      className={`py-1 px-2.5 rounded-lg text-xs font-bold border transition ${
+                        discountType === d.type && discountValue === d.value
+                          ? "bg-[#081C6C] text-white border-[#081C6C]"
+                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                  <div className="flex items-center gap-1 ml-auto">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={discountType === "PORCENTAJE" && discountValue > 0 ? discountValue : ""}
+                      placeholder="Libre"
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setDiscountType(val > 0 ? "PORCENTAJE" : "NINGUNO");
+                        setDiscountValue(Math.min(100, val));
+                      }}
+                      className="w-16 px-1.5 py-1 text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081C6C]"
+                    />
+                    <span className="text-[11px] text-slate-500 font-bold">%</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Método de Pago */}
@@ -618,25 +721,41 @@ export function LuminaPosTerminal({
               <p className="text-xs font-mono text-slate-500">Ticket: {completedSale.numeroTicket}</p>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-xl space-y-1.5 text-xs text-slate-600 border border-slate-100">
+            <div className="p-3.5 bg-slate-50 rounded-xl space-y-2 text-xs text-slate-600 border border-slate-100">
               <div className="flex justify-between">
                 <span>Cajero:</span>
                 <span className="font-semibold text-slate-800">{currentUser.nombre}</span>
               </div>
               <div className="flex justify-between">
-                <span>Método:</span>
-                <span className="font-semibold text-slate-800">{completedSale.metodoPago}</span>
+                <span>Método de Pago:</span>
+                <span className="font-bold text-slate-800">{completedSale.metodoPago}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Total Cobrado:</span>
-                <span className="font-bold text-[#081C6C] tabular-nums">
+              {completedSale.descuento > 0 && (
+                <div className="flex justify-between text-emerald-700">
+                  <span>Descuento Aplicado:</span>
+                  <span className="font-bold tabular-nums">-{formatPEN(completedSale.descuento)}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-slate-200/80 pt-1.5 font-bold">
+                <span className="text-slate-900">Total Cobrado:</span>
+                <span className="text-[#081C6C] text-sm tabular-nums">
                   {formatPEN(completedSale.total)}
                 </span>
               </div>
               {completedSale.metodoPago === "EFECTIVO" && (
-                <div className="flex justify-between text-emerald-700 font-bold">
-                  <span>Vuelto Entregado:</span>
-                  <span className="tabular-nums">{formatPEN(completedSale.vuelto)}</span>
+                <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
+                  <div className="flex justify-between text-slate-700">
+                    <span>Dinero Recibido:</span>
+                    <span className="font-bold tabular-nums">
+                      {formatPEN(completedSale.montoRecibido ?? completedSale.financials?.montoRecibido ?? completedSale.total)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-emerald-700 font-extrabold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    <span>Vuelto Entregado:</span>
+                    <span className="tabular-nums text-sm">
+                      {formatPEN(completedSale.vuelto ?? completedSale.financials?.vuelto ?? 0)}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
