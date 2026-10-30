@@ -265,7 +265,7 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
                         min="0"
                         value={montoApertura}
                         onChange={(e) => setMontoApertura(parseFloat(e.target.value) || 0)}
-                        className="w-full text-base font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#081C6C]"
+                        className="w-full text-base font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 tabular-nums focus:outline-none focus:ring-2 focus:ring-[#081C6C]"
                       />
                     </div>
 
@@ -279,7 +279,7 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
                         min="0"
                         value={ventasEfectivo}
                         onChange={(e) => setVentasEfectivo(parseFloat(e.target.value) || 0)}
-                        className="w-full text-base font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#081C6C]"
+                        className="w-full text-base font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 tabular-nums focus:outline-none focus:ring-2 focus:ring-[#081C6C]"
                       />
                     </div>
 
@@ -293,7 +293,7 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
                         min="0"
                         value={efectivoContado}
                         onChange={(e) => setEfectivoContado(parseFloat(e.target.value) || 0)}
-                        className="w-full text-base font-black text-blue-900 bg-white border border-blue-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        className="w-full text-base font-black text-blue-900 bg-white border border-blue-300 rounded-lg px-2.5 py-1.5 tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-600"
                       />
                     </div>
                   </div>
@@ -316,11 +316,11 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
                       )}
                       <div>
                         <p className="text-xs font-semibold">
-                          Total Esperado: <span className="font-bold">{formatPEN(calculos.efectivoEsperado)}</span>
+                          Total Esperado: <span className="font-bold tabular-nums">{formatPEN(calculos.efectivoEsperado)}</span>
                         </p>
                         <p className="text-xs">
                           Diferencia:{" "}
-                          <span className="font-black">
+                          <span className="font-black tabular-nums">
                             {formatPEN(calculos.diferencia)} ({calculos.estadoDiferencia})
                           </span>
                         </p>

@@ -33,6 +33,12 @@ export default function HomePage() {
   const [isReportsOpen, setIsReportsOpen] = useState<boolean>(false);
   const [isDashboardOpen, setIsDashboardOpen] = useState<boolean>(false);
   const [isKardexOpen, setIsKardexOpen] = useState<boolean>(false);
+  const closeModal = useCallback((setter: (v: boolean) => void) => {
+    setter(false);
+    if (typeof window !== "undefined") {
+      setTimeout(() => window.dispatchEvent(new CustomEvent("lumina:focus-search")), 60);
+    }
+  }, []);
   const [catalogItems, setCatalogItems] = useState<any[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("CONNECTED");
@@ -354,7 +360,7 @@ export default function HomePage() {
       {/* Modal de Importación Masiva (Oculto en espera de archivo definitivo) */}
       <BulkImporterModal
         isOpen={isImporterOpen}
-        onClose={() => setIsImporterOpen(false)}
+        onClose={() => closeModal(setIsImporterOpen)}
         onImportCompleted={() => {
           loadCatalog();
         }}
@@ -364,7 +370,7 @@ export default function HomePage() {
       {currentUser && (
         <SalesHistoryModal
           isOpen={isSalesHistoryOpen}
-          onClose={() => setIsSalesHistoryOpen(false)}
+          onClose={() => closeModal(setIsSalesHistoryOpen)}
           currentUser={currentUser}
           onSaleVoided={() => {
             loadCatalog();
@@ -376,7 +382,7 @@ export default function HomePage() {
       {currentUser && (
         <UnifiedReportsModal
           isOpen={isReportsOpen}
-          onClose={() => setIsReportsOpen(false)}
+          onClose={() => closeModal(setIsReportsOpen)}
           currentUser={currentUser}
         />
       )}
@@ -385,7 +391,7 @@ export default function HomePage() {
       {currentUser && (
         <LiquidationDashboardModal
           isOpen={isDashboardOpen}
-          onClose={() => setIsDashboardOpen(false)}
+          onClose={() => closeModal(setIsDashboardOpen)}
         />
       )}
 
@@ -393,7 +399,7 @@ export default function HomePage() {
       {currentUser && (
         <KardexAuditModal
           isOpen={isKardexOpen}
-          onClose={() => setIsKardexOpen(false)}
+          onClose={() => closeModal(setIsKardexOpen)}
           currentUser={currentUser}
           catalog={catalogItems}
           onInventoryAdjusted={() => {

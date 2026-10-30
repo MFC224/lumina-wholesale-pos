@@ -70,6 +70,7 @@ export function LuminaPosTerminal({
 
   // Estado de procesamiento y modal de ticket
   const [isProcessing, setIsProcessing] = useState(false);
+  const isExecutingRef = useRef(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completedSale, setCompletedSale] = useState<any | null>(null);
   const [customerName, setCustomerName] = useState<string>("Público General");
@@ -194,6 +195,15 @@ export function LuminaPosTerminal({
     saveCartToStorage(cart);
   }, [cart]);
 
+  // Escuchar evento de re-enfoque automático al cerrar modales secundarios
+  useEffect(() => {
+    const handleFocusSearch = () => {
+      searchInputRef.current?.focus();
+    };
+    window.addEventListener("lumina:focus-search", handleFocusSearch);
+    return () => window.removeEventListener("lumina:focus-search", handleFocusSearch);
+  }, []);
+
   // Atajos globales de teclado (Keyboard-First POS)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -209,10 +219,10 @@ export function LuminaPosTerminal({
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
       }
-      // F4 para cobro directo
-      else if (e.key === "F4") {
+      // F12 o F4 para cobro directo
+      else if (e.key === "F12" || e.key === "F4") {
         e.preventDefault();
-        if (cart.length > 0 && !isProcessing && financials.esMontoSuficiente) {
+        if (cart.length > 0 && !isProcessing && !isExecutingRef.current && financials.esMontoSuficiente) {
           handleExecuteSale();
         }
       }
@@ -230,6 +240,7 @@ export function LuminaPosTerminal({
       else if (e.key === "Escape") {
         if (completedSale) {
           setCompletedSale(null);
+          setTimeout(() => searchInputRef.current?.focus(), 50);
         } else if (searchQuery) {
           setSearchQuery("");
         }
@@ -278,6 +289,11 @@ export function LuminaPosTerminal({
         ];
       }
     });
+
+    // Re-enfocar automáticamente el buscador tras añadir con clic (ergonomía para lector láser)
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 50);
   };
 
   // Detección y adición por pistola lectora de código de barras o Enter directo
@@ -337,11 +353,17 @@ export function LuminaPosTerminal({
         })
         .filter(Boolean) as CartItem[]
     );
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 50);
   };
 
   // Quitar ítem
   const removeFromCart = (varianteId: string) => {
     setCart((prev) => prev.filter((item) => item.varianteId !== varianteId));
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 50);
   };
 
   // Limpiar carrito completo
@@ -352,17 +374,21 @@ export function LuminaPosTerminal({
     setCashReceived(0);
     setErrorMessage(null);
     clearCartStorage();
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 50);
   };
 
-  // Ejecutar venta transaccional
+  // Ejecutar venta transaccional con candado síncrono anti-doble clic
   const handleExecuteSale = async () => {
-    if (cart.length === 0 || isProcessing) return;
+    if (cart.length === 0 || isProcessing || isExecutingRef.current) return;
 
     if (paymentMethod === "EFECTIVO" && !financials.esMontoSuficiente) {
       setErrorMessage(`El monto recibido (S/. ${cashReceived.toFixed(2)}) es insuficiente para cubrir S/. ${financials.total.toFixed(2)}.`);
       return;
     }
 
+    isExecutingRef.current = true;
     setIsProcessing(true);
     setErrorMessage(null);
 
@@ -403,6 +429,7 @@ export function LuminaPosTerminal({
     } catch {
       setErrorMessage("Error de conexión al procesar la venta.");
     } finally {
+      isExecutingRef.current = false;
       setIsProcessing(false);
     }
   };
@@ -569,7 +596,7 @@ export function LuminaPosTerminal({
           )}
 
           {/* Lista de Ítems en Carrito */}
-          <div className="p-4 overflow-y-auto flex-1 max-h-56 divide-y divide-slate-100 space-y-2">
+          <div className="p-4 overflow-y-auto flex-1 max-h-[38vh] min-h-[160px] divide-y divide-slate-100 space-y-2">
             {cart.length === 0 ? (
               <div className="text-center py-10 text-slate-400 text-xs">
                 Seleccione productos a la izquierda para iniciar la venta.
@@ -810,10 +837,14 @@ export function LuminaPosTerminal({
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="text"
-                  placeholder="DNI / RUC"
+                  placeholder="DNI / RUC (Solo números)"
                   value={customerDoc}
-                  onChange={(e) => setCustomerDoc(e.target.value)}
-                  className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-[#081C6C]"
+                  maxLength={11}
+                  onChange={(e) => {
+                    const clean = e.target.value.replace(/\D/g, "").slice(0, 11);
+                    setCustomerDoc(clean);
+                  }}
+                  className="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-[#081C6C]"
                 />
                 <input
                   type="text"
@@ -835,7 +866,7 @@ export function LuminaPosTerminal({
                   <button
                     type="button"
                     onClick={() => setCashReceived(financials.total)}
-                    className="px-2 py-1 text-[11px] font-bold bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-100"
+                    className="px-2 py-1 text-[11px] font-bold bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-100 tabular-nums"
                   >
                     Exacto
                   </button>
@@ -844,7 +875,7 @@ export function LuminaPosTerminal({
                       key={billete}
                       type="button"
                       onClick={() => setCashReceived(billete)}
-                      className={`px-2 py-1 text-[11px] font-bold rounded-lg border ${
+                      className={`px-2 py-1 text-[11px] font-bold rounded-lg border tabular-nums ${
                         cashReceived === billete
                           ? "bg-slate-800 text-white border-slate-800"
                           : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
@@ -855,10 +886,15 @@ export function LuminaPosTerminal({
                   ))}
                   <input
                     type="number"
-                    value={cashReceived || ""}
-                    onChange={(e) => setCashReceived(parseFloat(e.target.value) || 0)}
+                    min="0"
+                    step="0.5"
+                    value={cashReceived > 0 ? cashReceived : ""}
+                    onChange={(e) => {
+                      const val = Math.max(0, parseFloat(e.target.value) || 0);
+                      setCashReceived(val);
+                    }}
                     placeholder="Otro..."
-                    className="w-20 px-2 py-1 text-xs bg-white border border-slate-200 rounded-lg font-bold text-slate-800"
+                    className="w-20 px-2 py-1 text-xs bg-white border border-slate-200 rounded-lg font-bold text-slate-800 tabular-nums"
                   />
                 </div>
               </div>
@@ -878,7 +914,7 @@ export function LuminaPosTerminal({
               )}
               <div className="flex justify-between text-base font-extrabold text-slate-900 pt-1 border-t border-slate-200">
                 <span>TOTAL A PAGAR:</span>
-                <span className="tabular-nums text-[#081C6C] text-lg">{formatPEN(financials.total)}</span>
+                <span className="tabular-nums text-[#081C6C] text-lg font-black">{formatPEN(financials.total)}</span>
               </div>
 
               {paymentMethod === "EFECTIVO" && financials.total > 0 && (
@@ -897,7 +933,7 @@ export function LuminaPosTerminal({
               )}
             </div>
 
-            {/* Botón Principal de Cobro [F4] */}
+            {/* Botón Principal de Cobro [F12 / F4] */}
             <button
               type="button"
               disabled={
@@ -917,7 +953,7 @@ export function LuminaPosTerminal({
                 <>
                   <CheckCircle2 className="w-5 h-5" />
                   <span>COBRAR {formatPEN(financials.total)}</span>
-                  <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded font-mono">F4</span>
+                  <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded font-mono">F12 · F4</span>
                 </>
               )}
             </button>
