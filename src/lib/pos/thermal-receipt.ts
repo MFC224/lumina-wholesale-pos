@@ -26,6 +26,9 @@ export interface ThermalReceiptData {
   items: ThermalReceiptItem[];
   anulada?: boolean;
   motivoAnulacion?: string;
+  esDevolucion?: boolean;
+  montoDevolucion?: number;
+  motivoDevolucion?: string;
 }
 
 export const LEYENDA_LIQUIDACION_TICKET = "VENTA FINAL DE LIQUIDACIÓN — SIN CAMBIOS NI DEVOLUCIONES";
@@ -167,11 +170,11 @@ export function generateThermalReceiptHtml(data: ThermalReceiptData, paperWidth:
   </style>
 </head>
 <body>
-  ${data.anulada ? `<div class="watermark-anulada">*** TICKET ANULADO ***</div>` : ""}
+  ${data.esDevolucion ? `<div class="watermark-anulada">*** NOTA DE CRÉDITO / DEVOLUCIÓN ***</div>` : data.anulada ? `<div class="watermark-anulada">*** TICKET ANULADO ***</div>` : ""}
 
   <div class="text-center">
     <div class="brand-title">LUMINA WHOLESALE</div>
-    <div class="brand-sub">LIQUIDACIÓN & REMATE DE ALMACÉN</div>
+    <div class="brand-sub">${data.esDevolucion ? "COMPROBANTE DE REEMBOLSO PARCIAL" : "LIQUIDACIÓN & REMATE DE ALMACÉN"}</div>
     <div style="font-size: 9px; margin-top: 2px;">RUC: 20608945123</div>
     <div style="font-size: 9px;">LIMA - PERÚ &bull; MONEDA: SOLES (S/.)</div>
   </div>

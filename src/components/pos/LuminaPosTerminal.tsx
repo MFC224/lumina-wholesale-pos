@@ -94,6 +94,28 @@ export function LuminaPosTerminal({
     }
   };
 
+  const playCriticalStockBeep = () => {
+    try {
+      if (typeof window !== "undefined" && (window.AudioContext || (window as any).webkitAudioContext)) {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.setValueAtTime(349, ctx.currentTime + 0.07);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.16);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.16);
+      }
+    } catch {
+      // Audio no permitido
+    }
+  };
+
   const handlePrintReceipt = useCallback(() => {
     if (!completedSale) return;
     const items = (completedSale.detalles || completedSale.items || []).map((i: any) => ({
@@ -202,6 +224,10 @@ export function LuminaPosTerminal({
   // Agregar variante al carrito
   const addToCart = (product: SearchableProduct, variant: SearchableVariant) => {
     if (variant.stockActual <= 0) return;
+
+    if (variant.stockActual > 0 && variant.stockActual <= 3) {
+      playCriticalStockBeep();
+    }
 
     setCart((prev) => {
       const existing = prev.find((item) => item.varianteId === variant.id);
@@ -532,7 +558,14 @@ export function LuminaPosTerminal({
               cart.map((item) => (
                 <div key={item.varianteId} className="pt-2 flex items-center justify-between gap-2 text-xs">
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-800 truncate">{item.nombre}</p>
+                    <div className="flex items-center gap-1.5 truncate">
+                      <p className="font-bold text-slate-800 truncate">{item.nombre}</p>
+                      {item.stockDisponible <= 3 && (
+                        <span className="shrink-0 text-[9px] font-bold text-red-700 bg-red-100 border border-red-200 px-1.5 py-0.2 rounded animate-pulse">
+                          ⚠️ {item.stockDisponible} un.
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-slate-400 font-mono">
                       {item.talla ? `${item.talla} · ` : ""}
                       {item.color ? `${item.color} · ` : ""}

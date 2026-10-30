@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { generateExecutiveExcelReport } from "@/lib/reports/excel";
+import { getDateRangeBounds, DateRangePreset } from "@/lib/reports/date-ranges";
 import { ExecutiveReportData } from "@/types/reports";
 import { Role } from "@/types/auth";
 import { PaymentMethod } from "@/types/sales";
@@ -21,8 +22,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
     }
 
-    // 1. Obtener todas las ventas
+    const { searchParams } = new URL(request.url);
+    const rangoParam = (searchParams.get("rango") as DateRangePreset) || undefined;
+    const desde = searchParams.get("desde");
+    const hasta = searchParams.get("hasta");
+
+    const bounds = rangoParam ? getDateRangeBounds(rangoParam, desde, hasta) : null;
+    const whereVenta: any = {};
+    if (bounds) {
+      whereVenta.createdAt = {
+        gte: bounds.startDate,
+        lte: bounds.endDate,
+      };
+    }
+
+    // 1. Obtener ventas filtradas por periodo
     const ventas = await prisma.venta.findMany({
+      where: whereVenta,
       orderBy: { createdAt: "asc" },
       include: {
         usuario: { select: { nombre: true } },

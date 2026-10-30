@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { UserProfile } from "@/types/auth";
 import { formatPEN } from "@/lib/utils";
 import { calcularArqueoCaja } from "@/lib/reports/cash-closing";
+import { DateRangePreset } from "@/lib/reports/date-ranges";
 import {
   FileSpreadsheet,
   FileText,
@@ -16,6 +17,7 @@ import {
   DollarSign,
   TrendingUp,
   FileCheck,
+  Calendar,
 } from "lucide-react";
 
 interface UnifiedReportsModalProps {
@@ -26,6 +28,7 @@ interface UnifiedReportsModalProps {
 
 export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedReportsModalProps) {
   const [activeTab, setActiveTab] = useState<"closing" | "excel">("closing");
+  const [datePreset, setDatePreset] = useState<DateRangePreset>("HOY");
 
   // Estados para Arqueo de Caja
   const [montoApertura, setMontoApertura] = useState<number>(150);
@@ -59,6 +62,7 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
           montoApertura,
           efectivoContadoFisico: efectivoContado,
           observaciones,
+          rango: datePreset,
         }),
       });
 
@@ -90,8 +94,8 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
     setDownloadingExcel(true);
     try {
       const link = document.createElement("a");
-      link.href = "/api/reports/excel";
-      link.download = `Reporte_Inventario_Lumina_${new Date().toISOString().split("T")[0]}.xlsx`;
+      link.href = `/api/reports/excel?rango=${datePreset}`;
+      link.download = `Reporte_Inventario_Lumina_${datePreset}_${new Date().toISOString().split("T")[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -149,6 +153,38 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
             <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
             <span>Libro de Inventario (Excel .xlsx)</span>
           </button>
+        </div>
+
+        {/* Selector de Periodo de Auditoría */}
+        <div className="bg-slate-100/80 px-6 py-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <span className="font-bold text-slate-700 flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-[#081C6C]" />
+            <span>Periodo de Auditoría:</span>
+          </span>
+          <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 shadow-xs">
+            {(
+              [
+                { id: "HOY", label: "Hoy" },
+                { id: "AYER", label: "Ayer" },
+                { id: "7_DIAS", label: "7 días" },
+                { id: "MES", label: "Este Mes" },
+                { id: "TODO", label: "Total" },
+              ] as const
+            ).map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setDatePreset(p.id)}
+                className={`px-2.5 py-1 rounded-md font-bold transition text-[11px] whitespace-nowrap ${
+                  datePreset === p.id
+                    ? "bg-[#081C6C] text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Contenido Dinámico */}

@@ -6,6 +6,7 @@ import {
   buildCashClosingDocument,
   renderCashClosingHtml,
 } from "@/lib/reports/cash-closing";
+import { getDateRangeBounds, DateRangePreset } from "@/lib/reports/date-ranges";
 import { EstadoVenta, MetodoPago, EstadoSesionCaja } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
@@ -28,11 +29,18 @@ export async function POST(request: NextRequest) {
     const efectivoContadoFisico = Number(body.efectivoContadoFisico || 0);
     const observaciones = body.observaciones ? String(body.observaciones).trim() : undefined;
 
-    // 1. Obtener todas las ventas completadas del turno
+    const rango = (body.rango as DateRangePreset) || "HOY";
+    const bounds = getDateRangeBounds(rango, body.desde, body.hasta);
+
+    // 1. Obtener ventas completadas dentro del rango seleccionado
     const ventasEfectivo = await prisma.venta.aggregate({
       where: {
         metodoPago: MetodoPago.EFECTIVO,
         estado: EstadoVenta.COMPLETADA,
+        createdAt: {
+          gte: bounds.startDate,
+          lte: bounds.endDate,
+        },
       },
       _sum: { total: true },
     });
@@ -41,6 +49,10 @@ export async function POST(request: NextRequest) {
       where: {
         metodoPago: { not: MetodoPago.EFECTIVO },
         estado: EstadoVenta.COMPLETADA,
+        createdAt: {
+          gte: bounds.startDate,
+          lte: bounds.endDate,
+        },
       },
       _sum: { total: true },
     });
@@ -58,8 +70,8 @@ export async function POST(request: NextRequest) {
       cajeroId: session.userId,
       supervisorNombre: session.rol === "ADMIN" ? session.nombre : undefined,
       supervisorId: session.rol === "ADMIN" ? session.userId : undefined,
-      fechaApertura: new Date(now.setHours(8, 0, 0, 0)),
-      fechaCierre: new Date(),
+      fechaApertura: bounds.startDate,
+      fechaCierre: bounds.endDate,
       observaciones,
       input: {
         montoApertura,

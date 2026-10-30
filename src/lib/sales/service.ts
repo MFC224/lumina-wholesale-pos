@@ -297,3 +297,166 @@ export async function anularVentaDb(
     };
   }
 }
+
+export interface DevolucionItemInput {
+  ventaId: string;
+  detalleId: string;
+  cantidad: number;
+  adminUserId: string;
+  motivo: string;
+}
+
+export interface DevolucionItemResult {
+  success: boolean;
+  error?: string;
+  code?: string;
+  devolucion?: {
+    ventaId: string;
+    numeroTicket: string;
+    detalleId: string;
+    sku: string;
+    productoNombre: string;
+    cantidadDevuelta: number;
+    montoReembolso: number;
+    nuevoStock: number;
+    autorizadoPor: string;
+    fecha: Date;
+  };
+}
+
+/**
+ * Procesa la devolución parcial de un ítem de un ticket con reposición atómica a Kardex y reembolso en Soles.
+ * Requiere autorización explícita de un Administrador.
+ */
+export async function procesarDevolucionItemDb(
+  input: DevolucionItemInput
+): Promise<DevolucionItemResult> {
+  if (!input.motivo || !input.motivo.trim()) {
+    return {
+      success: false,
+      error: "El motivo de la devolución es obligatorio.",
+      code: "MOTIVO_REQUERIDO",
+    };
+  }
+
+  if (!input.cantidad || input.cantidad <= 0) {
+    return {
+      success: false,
+      error: "La cantidad a devolver debe ser mayor a 0.",
+      code: "CANTIDAD_INVALIDA",
+    };
+  }
+
+  try {
+    const admin = await prisma.usuario.findUnique({
+      where: { id: input.adminUserId },
+    });
+
+    if (!admin || admin.rol !== "ADMIN") {
+      return {
+        success: false,
+        error: "Solo un usuario con rol ADMINISTRADOR puede autorizar devoluciones.",
+        code: "NO_AUTORIZADO",
+      };
+    }
+
+    const resultado = await prisma.$transaction(async (tx) => {
+      const venta = await tx.venta.findUnique({
+        where: { id: input.ventaId },
+        include: {
+          detalles: {
+            where: { id: input.detalleId },
+            include: {
+              variante: {
+                include: { producto: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!venta) {
+        throw new Error("VENTA_NO_ENCONTRADA");
+      }
+
+      if (venta.estado === EstadoVenta.ANULADA) {
+        throw new Error("VENTA_ANULADA");
+      }
+
+      const detalle = venta.detalles[0];
+      if (!detalle) {
+        throw new Error("DETALLE_NO_ENCONTRADO");
+      }
+
+      if (input.cantidad > detalle.cantidad) {
+        throw new Error(`CANTIDAD_EXCESIVA:${detalle.cantidad}`);
+      }
+
+      // Calcular reembolso proporcional respetando descuentos
+      const subtotalVenta = Number(venta.subtotal);
+      const totalVenta = Number(venta.total);
+      const precioUnitario = Number(detalle.precioUnitario);
+      const factorDescuento = subtotalVenta > 0 ? totalVenta / subtotalVenta : 1;
+      const montoReembolso = Math.round(precioUnitario * input.cantidad * factorDescuento * 100) / 100;
+
+      // 1. Restaurar stock físico
+      const varianteAntes = await tx.varianteStock.findUniqueOrThrow({
+        where: { id: detalle.varianteId },
+      });
+      const stockAnterior = varianteAntes.stockActual;
+      const stockNuevo = stockAnterior + input.cantidad;
+
+      await tx.varianteStock.update({
+        where: { id: detalle.varianteId },
+        data: { stockActual: { increment: input.cantidad } },
+      });
+
+      // 2. Registrar en Kardex inmutable
+      await tx.movimientoKardex.create({
+        data: {
+          varianteId: detalle.varianteId,
+          tipo: TipoMovimiento.INGRESO,
+          cantidad: input.cantidad,
+          stockAnterior,
+          stockNuevo,
+          motivo: `Devolución parcial Ticket ${venta.numeroTicket} (${input.cantidad}x ${detalle.variante.sku}) - Motivo: ${input.motivo.trim()}`,
+          usuarioId: input.adminUserId,
+          ventaId: venta.id,
+        },
+      });
+
+      return {
+        ventaId: venta.id,
+        numeroTicket: venta.numeroTicket,
+        detalleId: detalle.id,
+        sku: detalle.variante.sku,
+        productoNombre: detalle.variante.producto.nombre,
+        cantidadDevuelta: input.cantidad,
+        montoReembolso,
+        nuevoStock: stockNuevo,
+        autorizadoPor: admin.nombre,
+        fecha: new Date(),
+      };
+    });
+
+    return {
+      success: true,
+      devolucion: resultado,
+    };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Desconocido";
+    if (msg.startsWith("CANTIDAD_EXCESIVA")) {
+      const max = msg.split(":")[1];
+      return {
+        success: false,
+        error: `La cantidad solicitada supera las ${max} unidades adquiridas en este ticket.`,
+        code: "CANTIDAD_EXCESIVA",
+      };
+    }
+    return {
+      success: false,
+      error: "Error interno al procesar devolución: " + msg,
+      code: "TRANSACCION_ERROR",
+    };
+  }
+}
