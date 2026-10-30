@@ -325,3 +325,188 @@ export function printThermalReceipt(data: ThermalReceiptData, paperWidth: "80mm"
     printWindow.focus();
   }
 }
+
+
+export interface ThermalCashClosingData {
+  numeroCierre?: string;
+  cajeroNombre: string;
+  supervisorNombre?: string;
+  fechaHora?: string | Date;
+  periodoLabel?: string;
+  montoApertura: number;
+  ventasEfectivo: number;
+  ventasYape: number;
+  ventasPlin: number;
+  ventasTarjeta: number;
+  ventasTransferencia: number;
+  totalVentas: number;
+  efectivoEsperado: number;
+  efectivoReal: number;
+  diferencia: number;
+  estadoCuadre: "CUADRADO" | "SOBRANTE" | "FALTANTE";
+  ticketsEmitidos: number;
+  ticketsAnulados: number;
+}
+
+/**
+ * Genera el documento HTML formateado para imprimir el Reporte de Cierre Z / Arqueo de Caja
+ * en tiqueteras térmicas estándar (80mm o 58mm).
+ */
+export function generateThermalCashClosingHtml(
+  data: ThermalCashClosingData,
+  paperWidth: "80mm" | "58mm" = "80mm"
+): string {
+  const fechaStr = data.fechaHora
+    ? new Date(data.fechaHora).toLocaleString("es-PE", {
+        timeZone: "America/Lima",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : new Date().toLocaleString("es-PE", {
+        timeZone: "America/Lima",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cierre Z - ${data.cajeroNombre}</title>
+  <style>
+    @page { margin: 0; size: ${paperWidth} auto; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', Courier, monospace;
+      color: #000;
+      -webkit-print-color-adjust: exact;
+    }
+    body {
+      width: ${paperWidth};
+      padding: ${paperWidth === "80mm" ? "8mm 6mm" : "5mm 3mm"};
+      font-size: ${paperWidth === "80mm" ? "12px" : "10px"};
+      line-height: 1.25;
+      background: #fff;
+    }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .text-left { text-align: left; }
+    .bold { font-weight: bold; }
+    .uppercase { text-transform: uppercase; }
+    .divider { border-top: 1px dashed #000; margin: 6px 0; }
+    .double-divider { border-top: 2px double #000; margin: 8px 0; }
+    .brand-title { font-size: ${paperWidth === "80mm" ? "15px" : "13px"}; font-weight: 900; }
+    .banner-z {
+      border: 2px solid #000;
+      padding: 4px;
+      margin: 6px 0;
+      font-size: 13px;
+      font-weight: 900;
+      text-align: center;
+      background: #eee;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    td { padding: 1.5px 0; font-size: ${paperWidth === "80mm" ? "11px" : "9.5px"}; }
+    .sign-box { margin-top: 25px; padding-top: 4px; border-top: 1px solid #000; text-align: center; font-size: 9px; }
+    @media print { body { width: 100%; } }
+  </style>
+</head>
+<body>
+  <div class="text-center">
+    <div class="brand-title">LUMINA WHOLESALE</div>
+    <div style="font-size: 9px;">RUC: 20608945123 &bull; LIMA - PERÚ</div>
+    <div class="banner-z">*** REPORTE DE CIERRE Z ***</div>
+  </div>
+
+  <table>
+    <tr><td class="bold">FECHA/HORA:</td><td class="text-right">${fechaStr}</td></tr>
+    <tr><td>CAJERO:</td><td class="text-right uppercase">${data.cajeroNombre}</td></tr>
+    ${data.supervisorNombre ? `<tr><td>SUPERVISOR:</td><td class="text-right uppercase">${data.supervisorNombre}</td></tr>` : ""}
+    ${data.periodoLabel ? `<tr><td>PERÍODO:</td><td class="text-right">${data.periodoLabel}</td></tr>` : ""}
+    <tr><td>TICKETS EMITIDOS:</td><td class="text-right bold">${data.ticketsEmitidos}</td></tr>
+    <tr><td>TICKETS ANULADOS:</td><td class="text-right">${data.ticketsAnulados}</td></tr>
+  </table>
+
+  <div class="divider"></div>
+  <div class="bold" style="font-size: 10px; margin-bottom: 3px;">DESGLOSE POR PASARELA (S/.)</div>
+  <table>
+    <tr><td>EFECTIVO:</td><td class="text-right bold">${formatPEN(data.ventasEfectivo)}</td></tr>
+    <tr><td>YAPE:</td><td class="text-right bold">${formatPEN(data.ventasYape)}</td></tr>
+    <tr><td>PLIN:</td><td class="text-right bold">${formatPEN(data.ventasPlin)}</td></tr>
+    <tr><td>TARJETA (POS):</td><td class="text-right bold">${formatPEN(data.ventasTarjeta)}</td></tr>
+    <tr><td>TRANSFERENCIA:</td><td class="text-right bold">${formatPEN(data.ventasTransferencia)}</td></tr>
+  </table>
+
+  <div class="double-divider"></div>
+  <table>
+    <tr style="font-size: 13px; font-weight: 900;">
+      <td>TOTAL VENTAS:</td>
+      <td class="text-right">${formatPEN(data.totalVentas)}</td>
+    </tr>
+  </table>
+
+  <div class="divider"></div>
+  <div class="bold" style="font-size: 10px; margin-bottom: 3px;">ARQUEO FÍSICO DE CAJA (SOLES)</div>
+  <table>
+    <tr><td>(+) Fondo Inicial:</td><td class="text-right">${formatPEN(data.montoApertura)}</td></tr>
+    <tr><td>(+) Efectivo por Ventas:</td><td class="text-right">${formatPEN(data.ventasEfectivo)}</td></tr>
+    <tr class="bold"><td>(=) Efectivo Esperado:</td><td class="text-right">${formatPEN(data.efectivoEsperado)}</td></tr>
+    <tr class="bold"><td>(=) Efectivo Contado Físico:</td><td class="text-right">${formatPEN(data.efectivoReal)}</td></tr>
+    <tr class="bold" style="font-size: 12px;">
+      <td>DIFERENCIA:</td>
+      <td class="text-right">${formatPEN(data.diferencia)} (${data.estadoCuadre})</td>
+    </tr>
+  </table>
+
+  <div class="double-divider"></div>
+  <table style="width: 100%; margin-top: 20px;">
+    <tr>
+      <td style="width: 48%;">
+        <div class="sign-box">FIRMA CAJERO<br>${data.cajeroNombre}</div>
+      </td>
+      <td style="width: 4%;"></td>
+      <td style="width: 48%;">
+        <div class="sign-box">FIRMA SUPERVISOR<br>ADMINISTRACIÓN</div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="text-center" style="margin-top: 15px; font-size: 8.5px; color: #444;">
+    SISTEMA LUMINA POS &bull; PERÚ
+  </div>
+
+  <script>
+    window.addEventListener('load', () => {
+      setTimeout(() => { window.print(); }, 250);
+    });
+  </script>
+</body>
+</html>`;
+}
+
+/**
+ * Dispara la impresión del Reporte de Cierre Z en la tiquetera térmica del cajero.
+ */
+export function printThermalCashClosing(
+  data: ThermalCashClosingData,
+  paperWidth: "80mm" | "58mm" = "80mm"
+): void {
+  if (typeof window === "undefined") return;
+  const html = generateThermalCashClosingHtml(data, paperWidth);
+  const printWindow = window.open("", "_blank", "width=400,height=600");
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+  }
+}

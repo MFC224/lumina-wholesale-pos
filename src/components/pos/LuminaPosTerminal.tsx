@@ -12,6 +12,7 @@ import {
 import { searchInMemoryCatalog, SearchableProduct, SearchableVariant } from "@/lib/pos/search";
 import { printThermalReceipt } from "@/lib/pos/thermal-receipt";
 import { getEligibleWholesaleTier, calculateWholesaleSavings } from "@/lib/pos/wholesale-tiers";
+import { saveCartToStorage, loadCartFromStorage, clearCartStorage } from "@/lib/pos/cart-persistence";
 import {
   Search,
   ShoppingCart,
@@ -180,6 +181,19 @@ export function LuminaPosTerminal({
     }
   }, [financials.total, paymentMethod, cashReceived]);
 
+  // Rehidratar borrador del carrito desde localStorage ante recargas (F5) o cierres involuntarios
+  useEffect(() => {
+    const saved = loadCartFromStorage();
+    if (saved.length > 0) {
+      setCart(saved);
+    }
+  }, []);
+
+  // Guardar automáticamente el carrito ante cualquier modificación
+  useEffect(() => {
+    saveCartToStorage(cart);
+  }, [cart]);
+
   // Atajos globales de teclado (Keyboard-First POS)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -337,6 +351,7 @@ export function LuminaPosTerminal({
     setDiscountType("NINGUNO");
     setCashReceived(0);
     setErrorMessage(null);
+    clearCartStorage();
   };
 
   // Ejecutar venta transaccional

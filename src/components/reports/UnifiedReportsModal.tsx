@@ -5,6 +5,7 @@ import { UserProfile } from "@/types/auth";
 import { formatPEN } from "@/lib/utils";
 import { calcularArqueoCaja } from "@/lib/reports/cash-closing";
 import { DateRangePreset } from "@/lib/reports/date-ranges";
+import { printThermalCashClosing } from "@/lib/pos/thermal-receipt";
 import {
   FileSpreadsheet,
   FileText,
@@ -88,6 +89,29 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
         printWindow.print();
       }, 300);
     }
+  };
+
+  const handlePrintThermalClosing = () => {
+    if (!calculos) return;
+    printThermalCashClosing({
+      cajeroNombre: currentUser.nombre,
+      supervisorNombre: currentUser.rol === "ADMIN" ? currentUser.nombre : undefined,
+      fechaHora: new Date(),
+      periodoLabel: datePreset,
+      montoApertura: calculos.montoApertura,
+      ventasEfectivo: calculos.ventasEfectivoTotal,
+      ventasYape: calculos.ventasDigitalesTotal,
+      ventasPlin: 0,
+      ventasTarjeta: 0,
+      ventasTransferencia: 0,
+      totalVentas: calculos.totalVentasGlobal,
+      efectivoEsperado: calculos.efectivoEsperado,
+      efectivoReal: calculos.efectivoContadoFisico,
+      diferencia: calculos.diferencia,
+      estadoCuadre: calculos.estadoDiferencia,
+      ticketsEmitidos: 1,
+      ticketsAnulados: 0,
+    });
   };
 
   const handleDownloadExcel = async () => {
@@ -328,13 +352,22 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
                     />
                   </div>
 
-                  <div className="pt-2 flex justify-end gap-3">
+                  <div className="pt-2 flex flex-wrap items-center justify-end gap-2.5">
                     <button
                       type="button"
                       onClick={onClose}
-                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                      className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
                     >
                       Cerrar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handlePrintThermalClosing}
+                      className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-md transition"
+                      title="Imprimir ticket térmico en 80mm o 58mm para adjuntar a la gaveta de efectivo"
+                    >
+                      <Printer className="w-4 h-4 text-emerald-400" />
+                      <span>Cierre Z Térmico</span>
                     </button>
                     <button
                       type="button"
@@ -347,7 +380,7 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
                       ) : (
                         <Printer className="w-4 h-4" />
                       )}
-                      <span>Generar Acta de Arqueo (PDF)</span>
+                      <span>Acta de Arqueo (PDF)</span>
                     </button>
                   </div>
                 </div>

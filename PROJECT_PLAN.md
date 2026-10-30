@@ -79,3 +79,26 @@
   - Sincronización inmediata con el terminal POS y catálogo en memoria.
 - **Resultados**: **20 suites y 162 tests automatizados en verde (100% pasando)**.
 - **Build de Producción**: Compilación Next.js 15 limpia con 15 rutas API y componentes optimizados.
+
+---
+
+### 🛡️ SPRINT 5: Resiliencia Offline, Cierre Z Térmico & Entrega Final (COMPLETADO ✅)
+- **Resiliencia y Persistencia de Carrito en Almacén (`cart-persistence.ts`)**:
+  - Mecanismo isomórfico de auto-guardado en `localStorage` con expiración automática de seguridad (12 horas).
+  - Recuperación y rehidratación inmediata del carrito ante cierres accidentales de pestaña, fallos de red o reinicios de laptop.
+  - Limpieza atómica tras completar la transacción o al pulsar <kbd>Esc</kbd>.
+- **Instalabilidad PWA Standalone (`manifest.ts`)**:
+  - Web App Manifest configurado con visualización `standalone`, orientación horizontal (POS landscape), colores Lumina (`#081C6C` y `#020B2D`).
+  - Capacidad de instalación nativa en laptops de caja sin barra de navegador para experiencia de terminal industrial.
+- **Acta de Cierre Z en Ticket Térmico de 80mm y 58mm (`thermal-receipt.ts`)**:
+  - Generador `generateThermalCashClosingHtml` y función `printThermalCashClosing`.
+  - Estándar peruano de Arqueo y Corte Z: Fondo Inicial, Recaudación en Efectivo, Pagos Digitales (Yape/Plin/Tarjeta), Efectivo Físico Arqueado, Descuadre de Caja (Sobrante/Faltante) y sección formal para firmas del Cajero y Supervisor de Turno.
+  - Botón integrado "Cierre Z Térmico" en el panel unificado de reportes.
+- **Exportación Contable de Kardex a Excel (.xlsx) (`kardex-excel.ts` & `/api/reports/kardex-excel`)**:
+  - Exportación con `exceljs` de la bitácora inmutable completa de movimientos físicos con formato corporativo Lumina.
+  - Columnas: Fecha, Movimiento, SKU, Producto, Detalle, Cantidad, Stock Previo, Stock Resultante, Operador y Motivo.
+  - Botón de descarga "Exportar Excel" directamente en el modal de Auditoría de Kardex.
+- **Resultados de Certificación**:
+  - **23 suites de pruebas automatizadas y 173 tests en verde (100% pasando, 0 fallos)**.
+  - Compilación Next.js 15 en modo producción con 19 rutas empaquetadas sin errores.
+  - Despliegue continuo en producción en Vercel con base de datos Supabase en São Paulo (`sa-east-1`).

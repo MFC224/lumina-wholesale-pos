@@ -18,6 +18,7 @@ import {
   TrendingDown,
   TrendingUp,
   RefreshCw,
+  FileSpreadsheet,
 } from "lucide-react";
 
 interface KardexMovement {
@@ -80,9 +81,24 @@ export function KardexAuditModal({
   const [adjustType, setAdjustType] = useState<"AJUSTE" | "INGRESO">("AJUSTE");
   const [adjustMotivo, setAdjustMotivo] = useState<string>("");
   const [processingAdjust, setProcessingAdjust] = useState<boolean>(false);
+  const [downloadingExcel, setDownloadingExcel] = useState<boolean>(false);
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const handleExportExcel = () => {
+    setDownloadingExcel(true);
+    try {
+      const link = document.createElement("a");
+      link.href = "/api/reports/kardex-excel";
+      link.download = `Kardex_Lumina_${new Date().toISOString().split("T")[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } finally {
+      setTimeout(() => setDownloadingExcel(false), 1200);
+    }
+  };
 
   const fetchKardex = useCallback(async () => {
     setLoading(true);
@@ -272,6 +288,18 @@ export function KardexAuditModal({
                   <option value="ANULACION">Anulaciones (+)</option>
                 </select>
               </div>
+
+              {/* Botón Exportar Excel */}
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                disabled={downloadingExcel}
+                className="flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-xs disabled:opacity-50"
+                title="Descargar bitácora completa de Kardex en Excel .xlsx"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>{downloadingExcel ? "Exportando..." : "Exportar Excel"}</span>
+              </button>
 
               {/* Botón Refrescar */}
               <button

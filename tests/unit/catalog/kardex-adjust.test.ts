@@ -38,15 +38,16 @@ describe("Módulo de Auditoría de Kardex y Ajustes de Stock (Sprint 4)", () => 
       });
     }
 
-    // 3. Obtener o crear variante de prueba
-    testVariant = await prisma.varianteStock.findFirst({
+    // 3. Obtener o crear variante de prueba exclusiva para evitar concurrencia en tests
+    testVariant = await prisma.varianteStock.findUnique({
+      where: { sku: "SKU-DEDICATED-KARDEX-ADJUST" },
       include: { producto: true },
     });
 
     if (!testVariant) {
       const prod = await prisma.producto.create({
         data: {
-          nombre: "Producto Test Kardex",
+          nombre: "Producto Exclusivo Kardex Adjust",
           precioOriginal: 50,
           precioLiquidacion: 30,
           costo: 15,
@@ -55,7 +56,7 @@ describe("Módulo de Auditoría de Kardex y Ajustes de Stock (Sprint 4)", () => 
       testVariant = await prisma.varianteStock.create({
         data: {
           productoId: prod.id,
-          sku: "TEST-KARDEX-SKU",
+          sku: "SKU-DEDICATED-KARDEX-ADJUST",
           stockInicial: 20,
           stockActual: 20,
         },
@@ -114,7 +115,11 @@ describe("Módulo de Auditoría de Kardex y Ajustes de Stock (Sprint 4)", () => 
   });
 
   it("debe registrar exitosamente un ajuste de inventario y reflejarlo en Kardex y en stock", async () => {
-    const stockAntes = testVariant.stockActual;
+    const currentVar = await prisma.varianteStock.findUniqueOrThrow({
+      where: { id: testVariant.id },
+    });
+    const stockAntes = currentVar.stockActual;
+
     const res = await registrarAjusteInventarioDb({
       varianteId: testVariant.id,
       cantidadAjuste: 3,
@@ -122,9 +127,6 @@ describe("Módulo de Auditoría de Kardex y Ajustes de Stock (Sprint 4)", () => 
       adminUserId: adminUser.id,
     });
 
-    if (!res.success) {
-      console.error("DEBUG res error:", res);
-    }
     expect(res.success).toBe(true);
     expect(res.movimiento).toBeDefined();
     expect(res.movimiento?.stockAnterior).toBe(stockAntes);
