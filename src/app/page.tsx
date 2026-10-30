@@ -6,8 +6,7 @@ import { LuminaPosTerminal } from "@/components/pos/LuminaPosTerminal";
 import { CatalogViewer } from "@/components/catalog/CatalogViewer";
 import { BulkImporterModal } from "@/components/catalog/BulkImporterModal";
 import { SalesHistoryModal } from "@/components/sales/SalesHistoryModal";
-import { CashClosingModal } from "@/components/reports/CashClosingModal";
-import { RealtimeConnectionBadge } from "@/components/realtime/RealtimeConnectionBadge";
+import { UnifiedReportsModal } from "@/components/reports/UnifiedReportsModal";
 import { RealtimeAlertsBanner } from "@/components/realtime/RealtimeAlertsBanner";
 import { StockSyncManager } from "@/lib/realtime/sync";
 import { initSupabaseStockChannel } from "@/lib/realtime/supabase";
@@ -17,23 +16,17 @@ import {
   ShieldCheck,
   UserCheck,
   LogOut,
-  Database,
-  Lock,
-  Layers,
-  CheckCircle2,
-  FileSpreadsheet,
-  Terminal,
+  BarChart3,
   RefreshCw,
-  PlusCircle,
 } from "lucide-react";
 
 export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [checkingAuth, setCheckingAuth] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<"pos" | "catalog" | "terminal">("pos");
+  const [activeTab, setActiveTab] = useState<"pos" | "catalog">("pos");
   const [isImporterOpen, setIsImporterOpen] = useState<boolean>(false);
   const [isSalesHistoryOpen, setIsSalesHistoryOpen] = useState<boolean>(false);
-  const [isCashClosingOpen, setIsCashClosingOpen] = useState<boolean>(false);
+  const [isReportsOpen, setIsReportsOpen] = useState<boolean>(false);
   const [catalogItems, setCatalogItems] = useState<any[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("CONNECTED");
@@ -147,32 +140,37 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      {/* Top Navbar Institucional Lumina */}
-      <header className="bg-[#081C6C] text-white shadow-md sticky top-0 z-40 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-black text-xl text-emerald-400 border border-white/15">
-            L
+      {/* Top Navbar Institucional Lumina (Formato Limpio en 1 Sola Línea) */}
+      <header className="bg-gradient-to-r from-[#061655] via-[#081C6C] to-[#0A2688] text-white shadow-md sticky top-0 z-40 px-4 md:px-6 py-2.5 flex items-center justify-between gap-4">
+        {/* Isotipo & Tipografía de Marca */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-700 p-0.5 shadow-sm">
+            <div className="w-full h-full bg-[#081C6C] rounded-[10px] flex items-center justify-center font-black text-xl text-emerald-400">
+              L
+            </div>
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-              Lumina Wholesale & Liquidation
-              <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                100% Producción
+            <h1 className="text-sm md:text-base font-extrabold tracking-tight text-white flex items-center gap-2 leading-tight">
+              <span className="bg-gradient-to-r from-white via-slate-100 to-emerald-200 bg-clip-text text-transparent">
+                Lumina Wholesale &amp; Liquidation
+              </span>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
+                Producción
               </span>
             </h1>
-            <p className="text-xs text-slate-300 font-normal">
+            <p className="text-[11px] text-slate-300/85 font-normal leading-none mt-0.5">
               Sistema Interno de Inventario y Caja de Remate
             </p>
           </div>
         </div>
 
         {currentUser && (
-          <div className="flex items-center gap-4">
-            {/* Navegación por pestañas */}
-            <div className="hidden md:flex items-center gap-1 bg-white/10 p-1 rounded-xl border border-white/10 text-xs">
+          <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-0.5">
+            {/* Navegación por pestañas (POS y Catálogo) */}
+            <div className="flex items-center gap-1 bg-white/10 p-1 rounded-xl border border-white/10 text-xs shrink-0">
               <button
                 onClick={() => setActiveTab("pos")}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition ${
+                className={`px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap ${
                   activeTab === "pos"
                     ? "bg-white text-[#081C6C] shadow-sm"
                     : "text-slate-200 hover:text-white"
@@ -182,78 +180,46 @@ export default function HomePage() {
               </button>
               <button
                 onClick={() => setActiveTab("catalog")}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition ${
+                className={`px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap ${
                   activeTab === "catalog"
                     ? "bg-white text-[#081C6C] shadow-sm"
                     : "text-slate-200 hover:text-white"
                 }`}
               >
-                Catálogo & Variantes
-              </button>
-              <button
-                onClick={() => setActiveTab("terminal")}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition ${
-                  activeTab === "terminal"
-                    ? "bg-white text-[#081C6C] shadow-sm"
-                    : "text-slate-200 hover:text-white"
-                }`}
-              >
-                Estado & RBAC
+                Catálogo &amp; Variantes
               </button>
             </div>
 
-            {/* Botón de importación masiva (Admin) */}
-            {currentUser.rol === "ADMIN" && (
-              <button
-                onClick={() => setIsImporterOpen(true)}
-                className="flex items-center gap-1.5 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-1.5 rounded-xl shadow transition"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Importar Excel/CSV</span>
-              </button>
-            )}
-
-            {/* Botón de Historial de Ventas / Anulación */}
+            {/* Botón de Historial de Ventas / Tickets */}
             <button
               onClick={() => setIsSalesHistoryOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl border border-white/15 transition"
+              className="flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl border border-white/15 transition whitespace-nowrap shrink-0"
+              title="Historial de tickets emitidos y anulaciones"
             >
               <span>Tickets</span>
             </button>
 
-            {/* Botón de Arqueo y Cierre de Caja */}
+            {/* Botón Unificado de Reportes (Excel + Arqueo PDF) */}
             <button
-              onClick={() => setIsCashClosingOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl border border-white/15 transition"
+              onClick={() => setIsReportsOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-bold bg-emerald-500/25 hover:bg-emerald-500 text-emerald-200 hover:text-white px-3.5 py-1.5 rounded-xl border border-emerald-400/40 transition whitespace-nowrap shadow-sm shrink-0"
+              title="Arqueo diario de caja en PDF y libro contable en Excel .xlsx"
             >
-              <span>Arqueo (PDF)</span>
+              <BarChart3 className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Reportes</span>
             </button>
 
-            {/* Botón de Descarga Excel Contable */}
-            <a
-              href="/api/reports/excel"
-              download
-              className="hidden lg:flex items-center gap-1.5 text-xs font-bold bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 hover:text-white px-3 py-1.5 rounded-xl border border-emerald-500/40 transition"
-              title="Descargar Reporte Ejecutivo en Excel .xlsx con fórmulas"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Excel (.xlsx)</span>
-            </a>
-
-            {/* Badge de Conexión en Tiempo Real Wi-Fi */}
-            <RealtimeConnectionBadge status={connectionStatus} />
-
             {/* Badge de Rol */}
-            <div className="flex items-center gap-2 bg-white/10 px-3.5 py-1.5 rounded-xl border border-white/15">
+            <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/15 shrink-0 whitespace-nowrap">
               {currentUser.rol === "ADMIN" ? (
-                <ShieldCheck className="w-4 h-4 text-amber-300" />
+                <ShieldCheck className="w-4 h-4 text-amber-300 shrink-0" />
               ) : (
-                <UserCheck className="w-4 h-4 text-emerald-300" />
+                <UserCheck className="w-4 h-4 text-emerald-300 shrink-0" />
               )}
-              <div className="text-right text-xs">
+              <div className="text-right text-xs leading-none">
                 <span className="font-bold text-white block leading-tight">{currentUser.nombre}</span>
-                <span className="text-[10px] text-slate-300 font-medium">
-                  {currentUser.rol === "ADMIN" ? "ADMINISTRADOR (Costos Visibles)" : "VENDEDOR (Modo Caja)"}
+                <span className="text-[10px] text-slate-300 font-medium block mt-0.5">
+                  {currentUser.rol === "ADMIN" ? "ADMIN" : "CAJERO"}
                 </span>
               </div>
             </div>
@@ -261,7 +227,8 @@ export default function HomePage() {
             {/* Botón de Bloqueo / Cerrar Sesión */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 text-xs font-semibold bg-red-500/20 hover:bg-red-500 text-red-200 hover:text-white px-3 py-1.5 rounded-xl transition-colors duration-150 border border-red-500/30"
+              className="flex items-center gap-1.5 text-xs font-semibold bg-red-500/20 hover:bg-red-500 text-red-200 hover:text-white px-3 py-1.5 rounded-xl transition-colors duration-150 border border-red-500/30 whitespace-nowrap shrink-0"
+              title="Bloquear sesión de caja"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Bloquear</span>
@@ -344,132 +311,19 @@ export default function HomePage() {
             <CatalogViewer currentUser={currentUser} initialProducts={catalogItems} />
           </div>
         ) : (
-          <div className="w-full space-y-6">
-            {/* Panel de Estado y Resumen */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-                    Terminal Activa: {currentUser.nombre}
-                  </h2>
-                  <span
-                    className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                      currentUser.rol === "ADMIN"
-                        ? "bg-amber-100 text-amber-800 border border-amber-300"
-                        : "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                    }`}
-                  >
-                    ROL: {currentUser.rol}
-                  </span>
-                </div>
-                <p className="text-sm text-slate-500 mt-1">
-                  Sesión activa con token JWT seguro. Ocultamiento de costos vigente según perfil.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setActiveTab("catalog")}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-[#081C6C] hover:bg-[#0E2A9E] rounded-xl transition"
-                >
-                  Ver Catálogo de Ventas
-                </button>
-              </div>
-            </div>
-
-            {/* Tarjetas de Cobertura de Fases */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Tarjeta 1 */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
-                    <Database className="w-5 h-5" />
-                  </div>
-                  <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Fase 1 (10 Tests)
-                  </span>
-                </div>
-                <h3 className="font-bold text-slate-800 text-base">Prisma DB & PIN RBAC</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Modelado relacional completo, encriptación bcrypt y roles con aislamiento de costos.
-                </p>
-              </div>
-
-              {/* Tarjeta 2 */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                    <Layers className="w-5 h-5" />
-                  </div>
-                  <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Fase 2 (20 Tests)
-                  </span>
-                </div>
-                <h3 className="font-bold text-slate-800 text-base">Variantes & Importador Excel</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Matriz de tallas/colores (HU-06), importador masivo (HU-07) y compresor WebP.
-                </p>
-              </div>
-
-              {/* Tarjeta 3 */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
-                    <Terminal className="w-5 h-5" />
-                  </div>
-                  <span className="flex items-center gap-1 text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
-                    Siguiente: Fase 3
-                  </span>
-                </div>
-                <h3 className="font-bold text-slate-800 text-base">Motor Transaccional Atómico</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Transacciones ACID con SELECT ... FOR UPDATE, Kardex inmutable y prevención de sobreventa.
-                </p>
-              </div>
-            </div>
-
-            {/* Panel de Políticas de Seguridad */}
-            <div className="bg-slate-900 text-slate-100 rounded-2xl p-6 shadow-lg border border-slate-800">
-              <div className="flex items-center gap-2 mb-4">
-                <Terminal className="w-5 h-5 text-emerald-400" />
-                <h4 className="font-bold text-sm tracking-wide text-white uppercase">
-                  Políticas Activas de Seguridad para {currentUser.nombre} ({currentUser.rol})
-                </h4>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-                <div className="p-3 bg-slate-800/70 rounded-xl border border-slate-700/60">
-                  <span className="text-slate-400 block mb-1 font-sans font-semibold">Visualización de Costos:</span>
-                  {currentUser.rol === "ADMIN" ? (
-                    <span className="text-emerald-400 font-bold flex items-center gap-1.5">
-                      ✓ PERMITIDO (Costo de adquisición y margen visibles)
-                    </span>
-                  ) : (
-                    <span className="text-red-400 font-bold flex items-center gap-1.5">
-                      ✗ DENEGADO (Costos ocultos y eliminados de payloads)
-                    </span>
-                  )}
-                </div>
-
-                <div className="p-3 bg-slate-800/70 rounded-xl border border-slate-700/60">
-                  <span className="text-slate-400 block mb-1 font-sans font-semibold">Importación Masiva Excel/CSV:</span>
-                  {currentUser.rol === "ADMIN" ? (
-                    <span className="text-emerald-400 font-bold flex items-center gap-1.5">
-                      ✓ HABILITADO (Carga y agrupación de variantes en base de datos)
-                    </span>
-                  ) : (
-                    <span className="text-red-400 font-bold flex items-center gap-1.5">
-                      ✗ DENEGADO (Función exclusiva de Administrador)
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+          <div className="w-full space-y-4">
+            <LuminaPosTerminal
+              currentUser={currentUser}
+              catalog={catalogItems}
+              onSaleCompleted={() => {
+                loadCatalog();
+              }}
+            />
           </div>
         )}
       </main>
 
-      {/* Modal de Importación Masiva */}
+      {/* Modal de Importación Masiva (Oculto en espera de archivo definitivo) */}
       <BulkImporterModal
         isOpen={isImporterOpen}
         onClose={() => setIsImporterOpen(false)}
@@ -490,11 +344,11 @@ export default function HomePage() {
         />
       )}
 
-      {/* Modal de Arqueo y Cierre Diario de Caja */}
+      {/* Modal Unificado de Reportes (Excel .xlsx + Arqueo Diario PDF) */}
       {currentUser && (
-        <CashClosingModal
-          isOpen={isCashClosingOpen}
-          onClose={() => setIsCashClosingOpen(false)}
+        <UnifiedReportsModal
+          isOpen={isReportsOpen}
+          onClose={() => setIsReportsOpen(false)}
           currentUser={currentUser}
         />
       )}

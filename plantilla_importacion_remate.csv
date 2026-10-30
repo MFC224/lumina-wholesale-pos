@@ -1,0 +1,11 @@
+codigoSku,nombre,rubro,categoria,marca,descripcion,talla,color,especificacion,stockInicial,precioRegular,precioRemate,costoImportacion,ubicacion
+HERR-001,Taladro Percutor 650W,HERRAMIENTA,Herramientas,Bosch,Mandril de 1/2 pulgada con velocidad variable,Unica,N/A,220V - 650W con maletin,8,220.00,140.00,95.00,Mesa 1
+HERR-002,Juego de Llaves Combinadas 12 Pzs,HERRAMIENTA,Herramientas,Stanley,Acero cromo vanadio medidas 8 a 19mm,Unica,N/A,Estuche plegable,15,95.00,55.00,32.00,Estante B
+ROPA-001,Polo Pique Cuello Camisero,ROPA,Ropa,Lacoste,Algodon peruano 100% mercerizado,S,Azul Marino,Corte clasico,10,120.00,45.00,22.00,Perchero 1
+ROPA-001,Polo Pique Cuello Camisero,ROPA,Ropa,Lacoste,Algodon peruano 100% mercerizado,M,Azul Marino,Corte clasico,18,120.00,45.00,22.00,Perchero 1
+ROPA-001,Polo Pique Cuello Camisero,ROPA,Ropa,Lacoste,Algodon peruano 100% mercerizado,L,Azul Marino,Corte clasico,12,120.00,45.00,22.00,Perchero 1
+ROPA-001,Polo Pique Cuello Camisero,ROPA,Ropa,Lacoste,Algodon peruano 100% mercerizado,M,Blanco,Corte clasico,14,120.00,45.00,22.00,Perchero 1
+ROPA-002,Pantalon Jean Clasico Denim,ROPA,Ropa,Levi's,Denim 14oz tiro medio,30,Azul Petroleo,Corte recto,8,160.00,65.00,35.00,Mesa 3
+ROPA-002,Pantalon Jean Clasico Denim,ROPA,Ropa,Levi's,Denim 14oz tiro medio,32,Azul Petroleo,Corte recto,15,160.00,65.00,35.00,Mesa 3
+ROPA-002,Pantalon Jean Clasico Denim,ROPA,Ropa,Levi's,Denim 14oz tiro medio,34,Azul Petroleo,Corte recto,6,160.00,65.00,35.00,Mesa 3
+HERR-003,Amoladora Angular 4-1/2 850W,HERRAMIENTA,Herramientas,DeWalt,Interruptor deslizante con bloqueo,Unica,N/A,11000 RPM 220V,5,260.00,165.00,110.00,Mesa 1
