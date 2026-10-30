@@ -1,4 +1,5 @@
 export type DateRangePreset = "HOY" | "AYER" | "7_DIAS" | "MES" | "TODO";
+export type DatePreset = DateRangePreset;
 
 export interface DateRangeBounds {
   startDate: Date;

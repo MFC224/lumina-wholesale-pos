@@ -42,11 +42,40 @@
 - **Pruebas Automatizadas TDD**:
   - Nueva suite `tests/unit/pos/thermal-receipt.test.ts` con 8 tests nuevos.
   - Cobertura total: **15 suites y 136 tests en verde (100% pasando)**.
-  - Compilación Next.js limpia sin advertencias de ESLint ni TypeScript.
 
 ---
 
-## 2. Propuesta para Sprint 3 (Siguiente Ciclo)
-- **Módulo de Devoluciones Parciales y Notas de Crédito Internas**: Gestión controlada de cambios autorizados por Admin con reposición automática a Kardex.
-- **Filtros Avanzados por Rango de Fechas y Turno en Reportes**: Selector de rango (Hoy, Ayer, Esta Semana, Este Mes) para exportar libros Excel y arqueos históricos.
-- **Alertas Auditivas y Notificaciones Push de Stock Agotado**: Sonido de advertencia en terminales cuando una variante llegue a 0 unidades durante el turno de remate.
+### 🔄 SPRINT 3: Devoluciones Parciales, Filtros Temporales & Alertas de Stock (COMPLETADO ✅)
+- **Filtros Temporales Dinámicos en Reportes**:
+  - Filtro por rangos predefinidos: `HOY`, `AYER`, `7_DIAS`, `MES`, `TODO` y personalizados en arqueos PDF y exportaciones Excel (.xlsx).
+- **Módulo de Devoluciones Parciales por Ítem**:
+  - Desglose de artículos comprados en el historial de tickets.
+  - Botón "Devolver Ítem" exclusivo para Administradores (`POST /api/sales/refund`).
+  - Cálculo proporcional exacto del reembolso considerando descuentos aplicados a la venta.
+  - Restauración atómica de existencias y generación de movimiento inmutable de `INGRESO` en Kardex.
+  - Emisión de Comprobante Térmico de Devolución / Nota de Crédito en 80mm o 58mm.
+- **Alertas Acústicas y Visuales de Stock Crítico**:
+  - Alerta sonora (Web Audio API) al escanear o agregar artículos con stock `<= 3`.
+  - Badges animados de stock crítico en el catálogo y en el carrito del POS.
+- **Resultados**: 17 suites y 146 tests automatizados en verde (100% pasando).
+
+---
+
+### 📈 SPRINT 4: Inteligencia de Liquidación, Escalas Mayoristas & Auditoría de Kardex en Vivo (COMPLETADO ✅)
+- **Escala de Descuentos Automática por Volumen Mayorista (`wholesale-tiers.ts`)**:
+  - Detección en tiempo real de unidades en el ticket:
+    - 3 a 5 unidades &rarr; **5% Descuento por Lote**.
+    - 6 a 11 unidades &rarr; **10% Descuento Media Docena**.
+    - 12+ unidades &rarr; **15% Descuento Fardo Mayorista (Docena)**.
+  - Banner inteligente en el terminal POS con visualización del ahorro en Soles y botón de 1-clic para aplicar la escala.
+- **Dashboard de Métricas & Velocidad de Desplome (`LiquidationDashboardModal.tsx` & `/api/reports/kpis`)**:
+  - Cálculo de la tasa de liquidación global (% de stock liquidado) y por categoría.
+  - Recaudación total en Soles dividida por método de pago (`EFECTIVO`, `YAPE`, `PLIN`, `TARJETA`, `TRANSFERENCIA`).
+  - Top 5 productos de mayor desplome (más vendidos en unidades y en S/.).
+  - Top 5 productos de menor rotación ("Huesos" de liquidación) con sugerencias automáticas de remate para acelerar salida.
+- **Auditoría de Kardex & Ajustes de Inventario Físico (`KardexAuditModal.tsx` & `/api/catalog/kardex/adjust`)**:
+  - Bitácora completa e inmutable de movimientos físicos (`VENTA`, `INGRESO`, `AJUSTE`, `ANULACION`) con usuario y fecha.
+  - Formulario de ajuste manual de existencias para administradores con motivo obligatorio y bloqueo pesimista contra stock negativo.
+  - Sincronización inmediata con el terminal POS y catálogo en memoria.
+- **Resultados**: **20 suites y 162 tests automatizados en verde (100% pasando)**.
+- **Build de Producción**: Compilación Next.js 15 limpia con 15 rutas API y componentes optimizados.

@@ -7,6 +7,8 @@ import { CatalogViewer } from "@/components/catalog/CatalogViewer";
 import { BulkImporterModal } from "@/components/catalog/BulkImporterModal";
 import { SalesHistoryModal } from "@/components/sales/SalesHistoryModal";
 import { UnifiedReportsModal } from "@/components/reports/UnifiedReportsModal";
+import { LiquidationDashboardModal } from "@/components/analytics/LiquidationDashboardModal";
+import { KardexAuditModal } from "@/components/kardex/KardexAuditModal";
 import { RealtimeAlertsBanner } from "@/components/realtime/RealtimeAlertsBanner";
 import { StockSyncManager } from "@/lib/realtime/sync";
 import { initSupabaseStockChannel } from "@/lib/realtime/supabase";
@@ -18,6 +20,8 @@ import {
   LogOut,
   BarChart3,
   RefreshCw,
+  TrendingUp,
+  Layers,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -27,6 +31,8 @@ export default function HomePage() {
   const [isImporterOpen, setIsImporterOpen] = useState<boolean>(false);
   const [isSalesHistoryOpen, setIsSalesHistoryOpen] = useState<boolean>(false);
   const [isReportsOpen, setIsReportsOpen] = useState<boolean>(false);
+  const [isDashboardOpen, setIsDashboardOpen] = useState<boolean>(false);
+  const [isKardexOpen, setIsKardexOpen] = useState<boolean>(false);
   const [catalogItems, setCatalogItems] = useState<any[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("CONNECTED");
@@ -202,12 +208,34 @@ export default function HomePage() {
             {/* Botón Unificado de Reportes (Excel + Arqueo PDF) */}
             <button
               onClick={() => setIsReportsOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-bold bg-emerald-500/25 hover:bg-emerald-500 text-emerald-200 hover:text-white px-3.5 py-1.5 rounded-xl border border-emerald-400/40 transition whitespace-nowrap shadow-sm shrink-0"
+              className="flex items-center gap-1.5 text-xs font-bold bg-emerald-500/25 hover:bg-emerald-500 text-emerald-200 hover:text-white px-3 py-1.5 rounded-xl border border-emerald-400/40 transition whitespace-nowrap shadow-sm shrink-0"
               title="Arqueo diario de caja en PDF y libro contable en Excel .xlsx"
             >
               <BarChart3 className="w-3.5 h-3.5 text-emerald-300" />
               <span>Reportes</span>
             </button>
+
+            {/* Botón de Dashboard de Métricas y Velocidad de Desplome */}
+            <button
+              onClick={() => setIsDashboardOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-bold bg-blue-500/25 hover:bg-blue-600 text-blue-200 hover:text-white px-3 py-1.5 rounded-xl border border-blue-400/40 transition whitespace-nowrap shadow-sm shrink-0"
+              title="Dashboard ejecutivo de rotación, velocidad de desplome y KPIs"
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-blue-300" />
+              <span>Métricas</span>
+            </button>
+
+            {/* Botón de Kardex y Ajustes de Stock (Exclusivo Admin) */}
+            {currentUser.rol === "ADMIN" && (
+              <button
+                onClick={() => setIsKardexOpen(true)}
+                className="flex items-center gap-1.5 text-xs font-bold bg-amber-500/25 hover:bg-amber-600 text-amber-200 hover:text-white px-3 py-1.5 rounded-xl border border-amber-400/40 transition whitespace-nowrap shadow-sm shrink-0"
+                title="Bitácora inmutable de Kardex y regularización de existencias"
+              >
+                <Layers className="w-3.5 h-3.5 text-amber-300" />
+                <span>Kardex</span>
+              </button>
+            )}
 
             {/* Badge de Rol */}
             <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/15 shrink-0 whitespace-nowrap">
@@ -350,6 +378,27 @@ export default function HomePage() {
           isOpen={isReportsOpen}
           onClose={() => setIsReportsOpen(false)}
           currentUser={currentUser}
+        />
+      )}
+
+      {/* Modal de Dashboard de Liquidación & KPIs */}
+      {currentUser && (
+        <LiquidationDashboardModal
+          isOpen={isDashboardOpen}
+          onClose={() => setIsDashboardOpen(false)}
+        />
+      )}
+
+      {/* Modal de Auditoría de Kardex & Ajustes de Inventario */}
+      {currentUser && (
+        <KardexAuditModal
+          isOpen={isKardexOpen}
+          onClose={() => setIsKardexOpen(false)}
+          currentUser={currentUser}
+          catalog={catalogItems}
+          onInventoryAdjusted={() => {
+            loadCatalog();
+          }}
         />
       )}
 

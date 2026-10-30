@@ -11,6 +11,7 @@ import {
 } from "@/lib/pos/calculations";
 import { searchInMemoryCatalog, SearchableProduct, SearchableVariant } from "@/lib/pos/search";
 import { printThermalReceipt } from "@/lib/pos/thermal-receipt";
+import { getEligibleWholesaleTier, calculateWholesaleSavings } from "@/lib/pos/wholesale-tiers";
 import {
   Search,
   ShoppingCart,
@@ -167,6 +168,10 @@ export function LuminaPosTerminal({
       montoRecibido: cashReceived,
     }
   );
+
+  // Unidades totales en carrito y elegibilidad de escala mayorista
+  const totalCartUnits = cart.reduce((sum, item) => sum + item.cantidad, 0);
+  const eligibleWholesaleTier = getEligibleWholesaleTier(totalCartUnits);
 
   // Auto-ajustar efectivo recibido al total si se cambia a efectivo y no se ha digitado nada
   useEffect(() => {
@@ -604,6 +609,33 @@ export function LuminaPosTerminal({
 
           {/* Descuentos Rápidos (Porcentaje % o Monto Fijo en Soles S/.) */}
           <div className="p-4 bg-slate-50 border-t border-slate-200 space-y-3">
+            {/* Banner Dinámico de Escala Mayorista */}
+            {eligibleWholesaleTier && (
+              <div className="p-2.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-100 border border-emerald-300 rounded-xl flex items-center justify-between gap-2 text-xs shadow-xs">
+                <div className="flex items-center gap-1.5 text-emerald-950 font-bold min-w-0">
+                  <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 animate-bounce" />
+                  <div className="truncate">
+                    <span className="block truncate text-xs font-black text-emerald-900">
+                      ⚡ Escala Mayorista: {eligibleWholesaleTier.badgeText}
+                    </span>
+                    <span className="text-[10px] font-medium text-emerald-700 block">
+                      Ahorras {formatPEN(calculateWholesaleSavings(financials.subtotal, eligibleWholesaleTier))} ({totalCartUnits} unidades)
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDiscountType("PORCENTAJE");
+                    setDiscountValue(eligibleWholesaleTier.discountPercentage);
+                  }}
+                  className="px-3 py-1 text-[11px] font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition whitespace-nowrap active:scale-95 shrink-0"
+                >
+                  Aplicar {eligibleWholesaleTier.discountPercentage}%
+                </button>
+              </div>
+            )}
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
