@@ -68,7 +68,15 @@ export function LuminaPosTerminal({
   const [discountType, setDiscountType] = useState<DiscountType>("NINGUNO");
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("EFECTIVO");
-  const [cashReceived, setCashReceived] = useState<number>(0);
+  const [cashReceivedInput, setCashReceivedInput] = useState<string>("");
+  const isCashManuallyModified = useRef(false);
+
+  // Parseo reactivo y tolerante a edición del monto recibido en efectivo
+  const cashReceived = React.useMemo(() => {
+    if (!cashReceivedInput.trim()) return 0;
+    const parsed = parseFloat(cashReceivedInput);
+    return isNaN(parsed) ? 0 : Math.max(0, parsed);
+  }, [cashReceivedInput]);
 
   // Estado de procesamiento y modal de ticket
   const [isProcessing, setIsProcessing] = useState(false);
@@ -177,12 +185,12 @@ export function LuminaPosTerminal({
   const totalCartUnits = cart.reduce((sum, item) => sum + item.cantidad, 0);
   const eligibleWholesaleTier = getEligibleWholesaleTier(totalCartUnits);
 
-  // Auto-ajustar efectivo recibido al total si se cambia a efectivo y no se ha digitado nada
+  // Auto-sugerir efectivo recibido al total si el cajero aún no ha interactuado manualmente con la casilla
   useEffect(() => {
-    if (cashReceived === 0 && financials.total > 0 && paymentMethod === "EFECTIVO") {
-      setCashReceived(financials.total);
+    if (!isCashManuallyModified.current && financials.total > 0 && paymentMethod === "EFECTIVO") {
+      setCashReceivedInput(financials.total.toFixed(2));
     }
-  }, [financials.total, paymentMethod, cashReceived]);
+  }, [financials.total, paymentMethod]);
 
   // Rehidratar borrador del carrito desde localStorage ante recargas (F5) o cierres involuntarios
   useEffect(() => {
@@ -373,7 +381,8 @@ export function LuminaPosTerminal({
     setCart([]);
     setDiscountValue(0);
     setDiscountType("NINGUNO");
-    setCashReceived(0);
+    isCashManuallyModified.current = false;
+    setCashReceivedInput("");
     setErrorMessage(null);
     clearCartStorage();
     setTimeout(() => {
@@ -940,51 +949,131 @@ export function LuminaPosTerminal({
               </div>
             </div>
 
-            {/* Billetes rápidos en Soles para pago en efectivo */}
+            {/* Sección Ergonómica y Amplia de Pago en Efectivo, Billetes y Vuelto */}
             {paymentMethod === "EFECTIVO" && financials.total > 0 && (
-              <div className="pt-1">
-                <span className="text-[10px] text-slate-400 block mb-1">
-                  Efectivo entregado por cliente:
-                </span>
+              <div className="bg-slate-50/90 rounded-2xl p-3.5 border-2 border-slate-200 shadow-2xs space-y-3 transition-all">
+                {/* Encabezado con Título y Botón Limpiar */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800">
+                    <Banknote className="w-4 h-4 text-emerald-600" />
+                    <span>Efectivo Entregado por Cliente</span>
+                  </div>
+                  {cashReceivedInput && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        isCashManuallyModified.current = true;
+                        setCashReceivedInput("");
+                      }}
+                      className="text-[11px] font-bold text-slate-500 hover:text-red-600 flex items-center gap-1 transition px-2 py-0.5 rounded-md hover:bg-slate-200"
+                      title="Dejar en blanco para ingresar otro monto"
+                    >
+                      <X className="w-3 h-3" />
+                      <span>Limpiar</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Casilla Principal de Entrada (Grande, Clara y Fácil de Editar) */}
+                <div className="relative flex items-center">
+                  <span className="absolute left-3.5 text-lg font-black text-slate-400 select-none pointer-events-none">
+                    S/.
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={cashReceivedInput}
+                    onChange={(e) => {
+                      let val = e.target.value.replace(/,/g, ".");
+                      // Permitir dejar en blanco, o números enteros/decimales con hasta 2 decimales (y en digitación "74.")
+                      if (val === "" || /^\d+(\.\d{0,2})?$/.test(val) || val === ".") {
+                        if (val === ".") val = "0.";
+                        isCashManuallyModified.current = true;
+                        setCashReceivedInput(val);
+                      }
+                    }}
+                    placeholder={financials.total > 0 ? financials.total.toFixed(2) : "0.00"}
+                    className="w-full pl-11 pr-4 py-2.5 text-xl font-black text-slate-900 bg-white border-2 border-slate-300 focus:border-[#081C6C] rounded-xl shadow-xs focus:outline-none tabular-nums transition"
+                  />
+                </div>
+
+                {/* Billetes Rápidos en Soles y Botón Monto Exacto */}
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     type="button"
-                    onClick={() => setCashReceived(financials.total)}
-                    className="px-2 py-1 text-[11px] font-bold bg-white border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-100 tabular-nums"
+                    onClick={() => {
+                      isCashManuallyModified.current = true;
+                      setCashReceivedInput(financials.total.toFixed(2));
+                    }}
+                    className={`px-3 py-1.5 text-xs font-extrabold rounded-lg border-2 transition active:scale-95 ${
+                      cashReceived === financials.total && cashReceivedInput === financials.total.toFixed(2)
+                        ? "bg-[#081C6C] text-white border-[#081C6C] shadow-xs"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-slate-400 hover:bg-slate-100"
+                    }`}
                   >
-                    Exacto
+                    Monto Exacto
                   </button>
-                  {BILLETES_PERU.map((billete) => (
-                    <button
-                      key={billete}
-                      type="button"
-                      onClick={() => setCashReceived(billete)}
-                      className={`px-2 py-1 text-[11px] font-bold rounded-lg border tabular-nums ${
-                        cashReceived === billete
-                          ? "bg-slate-800 text-white border-slate-800"
-                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
+                  {BILLETES_PERU.map((billete) => {
+                    const isSelected = cashReceived === billete && cashReceivedInput === billete.toString();
+                    return (
+                      <button
+                        key={billete}
+                        type="button"
+                        onClick={() => {
+                          isCashManuallyModified.current = true;
+                          setCashReceivedInput(billete.toString());
+                        }}
+                        className={`px-2.5 py-1.5 text-xs font-black rounded-lg border-2 transition tabular-nums active:scale-95 ${
+                          isSelected
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                            : "bg-white text-slate-700 border-slate-200 hover:border-slate-400 hover:bg-slate-100"
+                        }`}
+                      >
+                        S/. {billete}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Tarjeta de Vuelto a Entregar (Grande y Destacada) */}
+                <div
+                  className={`p-3 rounded-xl border-2 transition-all ${
+                    !cashReceivedInput.trim()
+                      ? "bg-slate-100/90 border-slate-200 text-slate-600"
+                      : financials.esMontoSuficiente
+                      ? "bg-emerald-50 border-emerald-300 text-emerald-950"
+                      : "bg-red-50 border-red-300 text-red-950"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold uppercase tracking-wide">
+                      {!cashReceivedInput.trim()
+                        ? "Esperando monto..."
+                        : financials.esMontoSuficiente
+                        ? "Vuelto a entregar"
+                        : "Efectivo insuficiente"}
+                    </span>
+                    <span
+                      className={`text-xl font-black tabular-nums ${
+                        !cashReceivedInput.trim()
+                          ? "text-slate-500"
+                          : financials.esMontoSuficiente
+                          ? "text-emerald-700"
+                          : "text-red-600"
                       }`}
                     >
-                      S/. {billete}
-                    </button>
-                  ))}
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    value={cashReceived > 0 ? cashReceived : ""}
-                    onChange={(e) => {
-                      const val = Math.max(0, parseFloat(e.target.value) || 0);
-                      setCashReceived(val);
-                    }}
-                    placeholder="Otro..."
-                    className="w-20 px-2 py-1 text-xs bg-white border border-slate-200 rounded-lg font-bold text-slate-800 tabular-nums"
-                  />
+                      {!cashReceivedInput.trim()
+                        ? "S/. 0.00"
+                        : financials.esMontoSuficiente
+                        ? formatPEN(financials.vuelto)
+                        : `Faltan ${formatPEN(financials.total - cashReceived)}`}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Desglose Contable y Vuelto */}
+            {/* Desglose Contable General */}
             <div className="pt-2 border-t border-slate-200/80 space-y-1 text-xs font-medium text-slate-600">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
@@ -1000,21 +1089,6 @@ export function LuminaPosTerminal({
                 <span>TOTAL A PAGAR:</span>
                 <span className="tabular-nums text-[#081C6C] text-lg font-black">{formatPEN(financials.total)}</span>
               </div>
-
-              {paymentMethod === "EFECTIVO" && financials.total > 0 && (
-                <div className="flex justify-between text-xs pt-1 text-slate-500">
-                  <span>Vuelto a entregar:</span>
-                  <span
-                    className={`font-extrabold tabular-nums text-sm ${
-                      financials.esMontoSuficiente ? "text-emerald-600" : "text-red-500"
-                    }`}
-                  >
-                    {financials.esMontoSuficiente
-                      ? formatPEN(financials.vuelto)
-                      : `Faltan ${formatPEN(financials.total - cashReceived)}`}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Botón Principal de Cobro [F12 / F4] */}
