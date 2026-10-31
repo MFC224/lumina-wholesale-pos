@@ -606,19 +606,19 @@ export function LiquidationDashboardModal({ isOpen, onClose }: LiquidationDashbo
 
                       if (index === 0 && hasSales) {
                         medalIcon = <Crown className="w-5 h-5 text-amber-500 animate-pulse" />;
-                        medalBadge = "🥇 1º Líder de Ventas";
+                        medalBadge = "1º Líder de Ventas";
                         cardBorder = "border-amber-300 ring-2 ring-amber-100";
                         headerBg = "bg-gradient-to-r from-amber-50 to-amber-100/70 text-amber-900";
                         rankBadge = "bg-amber-500 text-white shadow-xs";
                       } else if (index === 1 && hasSales) {
                         medalIcon = <Award className="w-4 h-4 text-slate-400" />;
-                        medalBadge = "🥈 2º Segundo Lugar";
+                        medalBadge = "2º Segundo Lugar";
                         cardBorder = "border-slate-300";
                         headerBg = "bg-slate-100/80 text-slate-800";
                         rankBadge = "bg-slate-400 text-white shadow-xs";
                       } else if (index === 2 && hasSales) {
                         medalIcon = <Award className="w-4 h-4 text-amber-700" />;
-                        medalBadge = "🥉 3º Tercer Lugar";
+                        medalBadge = "3º Tercer Lugar";
                         cardBorder = "border-amber-200";
                         headerBg = "bg-amber-50/50 text-amber-800";
                         rankBadge = "bg-amber-700 text-white shadow-xs";
@@ -762,22 +762,17 @@ export function LiquidationDashboardModal({ isOpen, onClose }: LiquidationDashbo
                   </h3>
                   <div className="divide-y divide-slate-100 text-xs">
                     {kpis.topLentaRotacion.map((prod) => (
-                      <div key={prod.productoId} className="py-2 space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="truncate">
-                            <p className="font-bold text-slate-800 truncate">{prod.nombre}</p>
-                            <span className="text-[10px] font-mono text-slate-400">
-                              SKU: {prod.codigoSku} &bull; Precio: {formatPEN(prod.precioLiquidacion)}
-                            </span>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <span className="font-extrabold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded text-[10px] block tabular-nums">
-                              {prod.stockActual} un. varadas
-                            </span>
-                          </div>
+                      <div key={prod.productoId} className="py-2.5 flex items-center justify-between gap-2">
+                        <div className="truncate">
+                          <p className="font-bold text-slate-800 truncate">{prod.nombre}</p>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            SKU: {prod.codigoSku} &bull; Precio: {formatPEN(prod.precioLiquidacion)}
+                          </span>
                         </div>
-                        <div className="text-[10px] font-semibold text-blue-700 bg-blue-50/70 px-2 py-0.5 rounded border border-blue-200/50">
-                          💡 {prod.sugerenciaRemate}
+                        <div className="text-right shrink-0">
+                          <span className="font-extrabold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded text-[10px] block tabular-nums">
+                            {prod.stockActual} un. varadas
+                          </span>
                         </div>
                       </div>
                     ))}

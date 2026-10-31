@@ -33,6 +33,8 @@ import {
   Loader2,
   Tag,
   Package,
+  AlertTriangle,
+  Zap,
 } from "lucide-react";
 
 export interface CartItem {
@@ -623,8 +625,9 @@ export function LuminaPosTerminal({
                           AGOTADO
                         </span>
                       ) : hasCriticalVariant ? (
-                        <span className="absolute top-1.5 right-1.5 bg-red-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded animate-pulse shadow-xs">
-                          ⚠️ {totalStock} un.
+                        <span className="absolute top-1.5 right-1.5 bg-red-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded animate-pulse shadow-xs flex items-center gap-1">
+                          <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                          <span>{totalStock} un.</span>
                         </span>
                       ) : (
                         <span className="absolute top-1.5 right-1.5 bg-emerald-600/90 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">
@@ -780,8 +783,9 @@ export function LuminaPosTerminal({
                     <div className="flex items-center gap-1.5 truncate">
                       <p className="font-bold text-slate-800 truncate">{item.nombre}</p>
                       {item.stockDisponible <= 3 && (
-                        <span className="shrink-0 text-[9px] font-bold text-red-700 bg-red-100 border border-red-200 px-1.5 py-0.5 rounded animate-pulse">
-                          ⚠️ {item.stockDisponible} un.
+                        <span className="shrink-0 text-[9px] font-bold text-red-700 bg-red-100 border border-red-200 px-1.5 py-0.5 rounded animate-pulse flex items-center gap-1">
+                          <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
+                          <span>{item.stockDisponible} un.</span>
                         </span>
                       )}
                     </div>
@@ -829,8 +833,9 @@ export function LuminaPosTerminal({
                 <div className="flex items-center gap-1.5 text-emerald-950 font-bold min-w-0">
                   <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 animate-bounce" />
                   <div className="truncate">
-                    <span className="block truncate text-xs font-black text-emerald-900">
-                      ⚡ Escala Mayorista: {eligibleWholesaleTier.badgeText}
+                    <span className="block truncate text-xs font-black text-emerald-900 flex items-center gap-1">
+                      <Zap className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Escala Mayorista: {eligibleWholesaleTier.badgeText}</span>
                     </span>
                     <span className="text-[10px] font-medium text-emerald-700 block">
                       Ahorras {formatPEN(calculateWholesaleSavings(financials.subtotal, eligibleWholesaleTier))} ({totalCartUnits} unidades)

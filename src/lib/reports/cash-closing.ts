@@ -260,10 +260,10 @@ export function renderCashClosingHtml(doc: CashClosingReportDocument): string {
   <div class="diff-box ${isCuadrado ? "diff-cuadrado" : isFaltante ? "diff-faltante" : "diff-sobrante"}">
     ${
       isCuadrado
-        ? "✓ CAJA CONCILIADA EXACTAMENTE (DIFERENCIA: S/. 0.00)"
+        ? "CAJA CONCILIADA EXACTAMENTE (DIFERENCIA: S/. 0.00)"
         : isFaltante
-        ? `⚠ FALTANTE DE CAJA DETECTADO: ${formatPEN(Math.abs(calculos.diferencia))}`
-        : `ℹ SOBRANTE DE CAJA DETECTADO: +${formatPEN(calculos.diferencia)}`
+        ? `FALTANTE DE CAJA DETECTADO: ${formatPEN(Math.abs(calculos.diferencia))}`
+        : `SOBRANTE DE CAJA DETECTADO: +${formatPEN(calculos.diferencia)}`
     }
   </div>
 
