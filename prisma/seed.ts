@@ -24,7 +24,9 @@ async function main() {
   // 2. Usuarios con PIN de 4 dígitos
   const adminPin = await hashPin("9999");
   const vendedor1Pin = await hashPin("1234");
-  const vendedor2Pin = await hashPin("4321");
+  const vendedor2Pin = await hashPin("2345");
+  const vendedor3Pin = await hashPin("3456");
+  const vendedor4Pin = await hashPin("4321");
 
   const admin = await prisma.usuario.create({
     data: {
@@ -37,7 +39,7 @@ async function main() {
 
   await prisma.usuario.create({
     data: {
-      nombre: "Caja 1 - Principal",
+      nombre: "Carlos Mendoza (Caja 1 - Principal)",
       pin: vendedor1Pin,
       rol: Rol.VENDEDOR,
       activo: true,
@@ -46,12 +48,32 @@ async function main() {
 
   await prisma.usuario.create({
     data: {
-      nombre: "Caja 2 - Almacén",
+      nombre: "Ana Gómez (Caja 2 - Mostrador Central)",
       pin: vendedor2Pin,
       rol: Rol.VENDEDOR,
       activo: true,
     },
   });
+
+  await prisma.usuario.create({
+    data: {
+      nombre: "Luis Paredes (Caja 3 - Almacén y Retiro)",
+      pin: vendedor3Pin,
+      rol: Rol.VENDEDOR,
+      activo: true,
+    },
+  });
+
+  await prisma.usuario.create({
+    data: {
+      nombre: "Sofía Quispe (Caja 4 - Liquidaciones)",
+      pin: vendedor4Pin,
+      rol: Rol.VENDEDOR,
+      activo: true,
+    },
+  });
+
+  console.log("✅ Usuarios creados: Admin (9999), Carlos Mendoza (1234), Ana Gómez (2345), Luis Paredes (3456), Sofía Quispe (4321)");
 
   console.log("✅ Usuarios creados: Admin (9999), Caja 1 (1234), Caja 2 (4321)");
 

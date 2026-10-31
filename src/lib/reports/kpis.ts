@@ -29,6 +29,16 @@ export interface SlowMovingProduct {
   sugerenciaRemate: string;
 }
 
+export interface SellerSalesMetric {
+  usuarioId: string;
+  nombre: string;
+  rol: string;
+  totalVendidoPEN: number;
+  totalTickets: number;
+  ticketPromedioPEN: number;
+  porcentajeTotal: number;
+}
+
 export interface LiquidationKpiSummary {
   // Desplome Global
   totalStockInicial: number;
@@ -47,6 +57,7 @@ export interface LiquidationKpiSummary {
   porCategoria: CategorySellThrough[];
   topMasVendidos: TopProductMetric[];
   topLentaRotacion: SlowMovingProduct[];
+  rankingVendedores: SellerSalesMetric[];
 }
 
 /**
@@ -247,6 +258,57 @@ export async function obtenerMetricasLiquidacionDb(startDate?: Date, endDate?: D
     })
     .slice(0, 5);
 
+  // 5. Ranking de Vendedores ("¿Quién vende más?")
+  const usuariosVendedores = await prisma.usuario.findMany({
+    where: {
+      activo: true,
+      OR: [
+        { rol: "VENDEDOR" },
+        { nombre: { contains: "Caja" } },
+        { nombre: { contains: "Vendedor" } },
+      ],
+    },
+    select: {
+      id: true,
+      nombre: true,
+      rol: true,
+    },
+    orderBy: {
+      nombre: "asc",
+    },
+  });
+
+  const sellerSalesMap = new Map<string, { total: number; tickets: number }>();
+  for (const venta of ventas) {
+    if (venta.usuarioId) {
+      const prev = sellerSalesMap.get(venta.usuarioId) || { total: 0, tickets: 0 };
+      prev.total += Number(venta.total);
+      prev.tickets += 1;
+      sellerSalesMap.set(venta.usuarioId, prev);
+    }
+  }
+
+  const rankingVendedores: SellerSalesMetric[] = usuariosVendedores
+    .map((usr) => {
+      const stats = sellerSalesMap.get(usr.id) || { total: 0, tickets: 0 };
+      const totalVendidoPEN = Math.round(stats.total * 100) / 100;
+      const ticketPromedioPEN =
+        stats.tickets > 0 ? Math.round((totalVendidoPEN / stats.tickets) * 100) / 100 : 0;
+      const pct =
+        totalVentasPEN > 0 ? Math.round((totalVendidoPEN / totalVentasPEN) * 1000) / 10 : 0;
+
+      return {
+        usuarioId: usr.id,
+        nombre: usr.nombre,
+        rol: usr.rol,
+        totalVendidoPEN,
+        totalTickets: stats.tickets,
+        ticketPromedioPEN,
+        porcentajeTotal: pct,
+      };
+    })
+    .sort((a, b) => b.totalVendidoPEN - a.totalVendidoPEN);
+
   return {
     totalStockInicial,
     totalStockActual,
@@ -260,5 +322,6 @@ export async function obtenerMetricasLiquidacionDb(startDate?: Date, endDate?: D
     porCategoria,
     topMasVendidos,
     topLentaRotacion,
+    rankingVendedores,
   };
 }

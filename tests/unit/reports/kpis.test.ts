@@ -54,4 +54,27 @@ describe("Módulo de Métricas y KPIs de Liquidación (Sprint 4)", () => {
       expect(slow).toHaveProperty("sugerenciaRemate");
     }
   });
+
+  it("debe calcular el ranking de los 4 vendedores con total vendido y porcentaje", async () => {
+    const kpis = await obtenerMetricasLiquidacionDb();
+
+    expect(Array.isArray(kpis.rankingVendedores)).toBe(true);
+    expect(kpis.rankingVendedores.length).toBeGreaterThanOrEqual(4);
+
+    const leader = kpis.rankingVendedores[0];
+    expect(leader).toHaveProperty("usuarioId");
+    expect(leader).toHaveProperty("nombre");
+    expect(leader).toHaveProperty("totalVendidoPEN");
+    expect(leader).toHaveProperty("totalTickets");
+    expect(leader).toHaveProperty("ticketPromedioPEN");
+    expect(leader).toHaveProperty("porcentajeTotal");
+    expect(leader.totalVendidoPEN).toBeGreaterThan(0);
+
+    // Debe estar ordenado descendentemente por total vendido
+    for (let i = 0; i < kpis.rankingVendedores.length - 1; i++) {
+      expect(kpis.rankingVendedores[i].totalVendidoPEN).toBeGreaterThanOrEqual(
+        kpis.rankingVendedores[i + 1].totalVendidoPEN
+      );
+    }
+  });
 });
