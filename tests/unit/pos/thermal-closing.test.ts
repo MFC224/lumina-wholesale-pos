@@ -27,7 +27,7 @@ describe("Módulo de Impresión Térmica de Cierre Z y Arqueo (Sprint 5)", () =>
   it("debe generar el HTML del Cierre Z con encabezado institucional y RUC", () => {
     const html = generateThermalCashClosingHtml(sampleClosingData, "80mm");
 
-    expect(html).toContain("LUMINA WHOLESALE");
+    expect(html).toContain("IMPORT L&R");
     expect(html).toContain("20608945123");
     expect(html).toContain("*** REPORTE DE CIERRE Z ***");
     expect(html).toContain("Rosa Flores");

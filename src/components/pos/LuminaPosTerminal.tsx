@@ -53,6 +53,16 @@ interface LuminaPosTerminalProps {
   onSaleCompleted?: () => void;
 }
 
+const UNIFIED_QUICK_DISCOUNTS = [
+  { label: "Sin Desc.", type: "NINGUNO" as DiscountType, value: 0, unit: "MONTO_FIJO" as const },
+  { label: "5%", type: "PORCENTAJE" as DiscountType, value: 5, unit: "PORCENTAJE" as const },
+  { label: "10%", type: "PORCENTAJE" as DiscountType, value: 10, unit: "PORCENTAJE" as const },
+  { label: "15%", type: "PORCENTAJE" as DiscountType, value: 15, unit: "PORCENTAJE" as const },
+  { label: "-S/. 5", type: "MONTO_FIJO" as DiscountType, value: 5, unit: "MONTO_FIJO" as const },
+  { label: "-S/. 10", type: "MONTO_FIJO" as DiscountType, value: 10, unit: "MONTO_FIJO" as const },
+  { label: "-S/. 20", type: "MONTO_FIJO" as DiscountType, value: 20, unit: "MONTO_FIJO" as const },
+] as const;
+
 export function LuminaPosTerminal({
   currentUser,
   catalog,
@@ -67,9 +77,69 @@ export function LuminaPosTerminal({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discountType, setDiscountType] = useState<DiscountType>("NINGUNO");
   const [discountValue, setDiscountValue] = useState<number>(0);
+  const [discountUnit, setDiscountUnit] = useState<"PORCENTAJE" | "MONTO_FIJO">("MONTO_FIJO");
+  const [discountCustomInput, setDiscountCustomInput] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("EFECTIVO");
   const [cashReceivedInput, setCashReceivedInput] = useState<string>("");
   const isCashManuallyModified = useRef(false);
+
+  // Manejador de cambio manual en la casilla de descuento personalizado (S/. o %)
+  const handleDiscountCustomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/,/g, ".").replace(/\s/g, "");
+    if (val === "" || /^\d+(\.\d{0,2})?$/.test(val) || val === ".") {
+      if (val === ".") val = "0.";
+      setDiscountCustomInput(val);
+      if (val === "" || parseFloat(val) === 0) {
+        setDiscountType("NINGUNO");
+        setDiscountValue(0);
+      } else {
+        const num = parseFloat(val);
+        if (!isNaN(num) && num > 0) {
+          if (discountUnit === "MONTO_FIJO") {
+            setDiscountType("MONTO_FIJO");
+            setDiscountValue(num);
+          } else {
+            setDiscountType("PORCENTAJE");
+            setDiscountValue(Math.min(100, num));
+          }
+        }
+      }
+    }
+  };
+
+  // Alternar unidad entre Soles (S/.) y Porcentaje (%) sin perder el valor ingresado
+  const handleToggleDiscountUnit = (unit: "PORCENTAJE" | "MONTO_FIJO") => {
+    setDiscountUnit(unit);
+    const num = parseFloat(discountCustomInput);
+    if (!isNaN(num) && num > 0) {
+      if (unit === "MONTO_FIJO") {
+        setDiscountType("MONTO_FIJO");
+        setDiscountValue(num);
+      } else {
+        setDiscountType("PORCENTAJE");
+        setDiscountValue(Math.min(100, num));
+      }
+    }
+  };
+
+  // Limpiar descuento completamente
+  const handleClearDiscount = () => {
+    setDiscountType("NINGUNO");
+    setDiscountValue(0);
+    setDiscountCustomInput("");
+  };
+
+  // Aplicar descuento rápido (unificado en 1 solo clic sin cambiar de pantalla)
+  const applyQuickDiscount = (type: DiscountType, value: number, unitLabel: "PORCENTAJE" | "MONTO_FIJO") => {
+    if (type === "NINGUNO" || value === 0) {
+      handleClearDiscount();
+      return;
+    }
+    setDiscountType(type);
+    setDiscountValue(value);
+    setDiscountUnit(unitLabel);
+    setDiscountCustomInput(value.toString());
+  };
 
   // Parseo reactivo y tolerante a edición del monto recibido en efectivo
   const cashReceived = React.useMemo(() => {
@@ -389,6 +459,7 @@ export function LuminaPosTerminal({
     setCart([]);
     setDiscountValue(0);
     setDiscountType("NINGUNO");
+    setDiscountCustomInput("");
     isCashManuallyModified.current = false;
     setCashReceivedInput("");
     setErrorMessage(null);
@@ -771,6 +842,8 @@ export function LuminaPosTerminal({
                   onClick={() => {
                     setDiscountType("PORCENTAJE");
                     setDiscountValue(eligibleWholesaleTier.discountPercentage);
+                    setDiscountUnit("PORCENTAJE");
+                    setDiscountCustomInput(eligibleWholesaleTier.discountPercentage.toString());
                   }}
                   className="px-3 py-1 text-[11px] font-extrabold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition whitespace-nowrap active:scale-95 shrink-0"
                 >
@@ -779,135 +852,97 @@ export function LuminaPosTerminal({
               </div>
             )}
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  Descuento de Remate
-                </span>
-                <div className="flex items-center gap-1 bg-slate-200/70 p-0.5 rounded-lg text-[10px] font-bold">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDiscountType(discountValue > 0 ? "PORCENTAJE" : "NINGUNO");
-                    }}
-                    className={`px-2 py-0.5 rounded transition ${
-                      discountType === "PORCENTAJE" || (discountType === "NINGUNO" && discountValue === 0)
-                        ? "bg-white text-[#081C6C] shadow-xs"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                  >
-                    Porcentaje (%)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDiscountType("MONTO_FIJO");
-                      if (discountValue === 0) setDiscountValue(5);
-                    }}
-                    className={`px-2 py-0.5 rounded transition ${
-                      discountType === "MONTO_FIJO"
-                        ? "bg-white text-[#081C6C] shadow-xs"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                  >
-                    Monto Fijo (S/.)
-                  </button>
+            {/* ========================================================================= */}
+            {/* SECCIÓN UNIFICADA: Descuentos de Remate (% y S/. en un solo espacio)     */}
+            {/* ========================================================================= */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <Tag className="w-3.5 h-3.5 text-[#081C6C]" />
+                  <span>Descuento de Remate</span>
                 </div>
+                {discountType !== "NINGUNO" && discountValue > 0 && (
+                  <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shadow-2xs">
+                    {discountType === "PORCENTAJE" ? `-${discountValue}% aplicado` : `-S/. ${discountValue.toFixed(2)} aplicado`}
+                  </span>
+                )}
               </div>
 
-              {discountType === "MONTO_FIJO" ? (
-                /* Selector de Monto Fijo en Soles */
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDiscountType("NINGUNO");
-                      setDiscountValue(0);
-                    }}
-                    className={`py-1 px-2.5 rounded-lg text-xs font-bold border transition ${
-                      discountValue === 0
-                        ? "bg-[#081C6C] text-white border-[#081C6C]"
-                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    Sin Desc.
-                  </button>
-                  {[5, 10, 15, 20, 50].map((monto) => (
-                    <button
-                      key={monto}
-                      type="button"
-                      onClick={() => {
-                        setDiscountType("MONTO_FIJO");
-                        setDiscountValue(monto);
-                      }}
-                      className={`py-1 px-2.5 rounded-lg text-xs font-bold border transition ${
-                        discountType === "MONTO_FIJO" && discountValue === monto
-                          ? "bg-[#081C6C] text-white border-[#081C6C]"
-                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
-                      }`}
-                    >
-                      -S/. {monto}
-                    </button>
-                  ))}
-                  <div className="flex items-center gap-1 ml-auto">
-                    <span className="text-[11px] text-slate-500 font-bold">S/.</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={discountType === "MONTO_FIJO" && discountValue > 0 ? discountValue : ""}
-                      placeholder="Libre"
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value) || 0;
-                        setDiscountType(val > 0 ? "MONTO_FIJO" : "NINGUNO");
-                        setDiscountValue(val);
-                      }}
-                      className="w-16 px-1.5 py-1 text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081C6C]"
-                    />
-                  </div>
-                </div>
-              ) : (
-                /* Selector de Porcentaje */
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {QUICK_DISCOUNTS.map((d) => (
+              {/* Fila Unificada: Chips Rápidos (% y S/.) + Entrada Manual con Switch S/. / % */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {UNIFIED_QUICK_DISCOUNTS.map((d) => {
+                  const isActive =
+                    (d.type === "NINGUNO" && (discountType === "NINGUNO" || discountValue === 0)) ||
+                    (discountType === d.type && discountValue === d.value);
+
+                  return (
                     <button
                       key={d.label}
                       type="button"
-                      onClick={() => {
-                        setDiscountType(d.type);
-                        setDiscountValue(d.value);
-                      }}
-                      className={`py-1 px-2.5 rounded-lg text-xs font-bold border transition ${
-                        discountType === d.type && discountValue === d.value
-                          ? "bg-[#081C6C] text-white border-[#081C6C]"
-                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                      onClick={() => applyQuickDiscount(d.type, d.value, d.unit)}
+                      className={`py-1.5 px-2.5 rounded-lg text-xs font-black border transition active:scale-95 ${
+                        isActive
+                          ? "bg-[#081C6C] text-white border-[#081C6C] shadow-xs"
+                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
                       }`}
                     >
                       {d.label}
                     </button>
-                  ))}
-                  <div className="flex items-center gap-1 ml-auto">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="1"
-                      value={discountType === "PORCENTAJE" && discountValue > 0 ? discountValue : ""}
-                      placeholder="Libre"
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value) || 0;
-                        setDiscountType(val > 0 ? "PORCENTAJE" : "NINGUNO");
-                        setDiscountValue(Math.min(100, val));
-                      }}
-                      className="w-16 px-1.5 py-1 text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#081C6C]"
-                    />
-                    <span className="text-[11px] text-slate-500 font-bold">%</span>
+                  );
+                })}
+
+                {/* Casilla de Entrada Libre con Toggle de Unidad S/. / % en el mismo espacio */}
+                <div className="flex items-center gap-1 bg-white border-2 border-slate-300 rounded-lg px-2 py-1 focus-within:border-[#081C6C] shadow-2xs ml-auto">
+                  <span className="text-[10px] text-slate-400 font-extrabold select-none">Otro:</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={discountCustomInput}
+                    placeholder="0"
+                    onChange={handleDiscountCustomChange}
+                    className="w-12 text-xs font-black text-slate-900 bg-transparent focus:outline-none tabular-nums"
+                  />
+                  <div className="flex bg-slate-100 p-0.5 rounded text-[10px] font-black">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleDiscountUnit("MONTO_FIJO")}
+                      className={`px-1.5 py-0.5 rounded transition ${
+                        discountUnit === "MONTO_FIJO"
+                          ? "bg-[#081C6C] text-white shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                      title="Descuento en Soles"
+                    >
+                      S/.
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleDiscountUnit("PORCENTAJE")}
+                      className={`px-1.5 py-0.5 rounded transition ${
+                        discountUnit === "PORCENTAJE"
+                          ? "bg-[#081C6C] text-white shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                      title="Descuento en Porcentaje"
+                    >
+                      %
+                    </button>
                   </div>
+                  {discountCustomInput && (
+                    <button
+                      type="button"
+                      onClick={handleClearDiscount}
+                      className="p-0.5 text-slate-400 hover:text-red-600 transition rounded"
+                      title="Quitar descuento"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Método de Pago */}
+            {/* Método de Pago (Botones Táctiles Talla Tablet) */}
             <div>
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
                 Método de Pago
@@ -918,10 +953,10 @@ export function LuminaPosTerminal({
                     key={m}
                     type="button"
                     onClick={() => setPaymentMethod(m)}
-                    className={`py-1.5 rounded-lg text-xs font-bold border transition ${
+                    className={`py-2 px-1 rounded-xl text-xs font-black border-2 transition active:scale-95 ${
                       paymentMethod === m
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300"
                     }`}
                   >
                     {m}
@@ -930,7 +965,7 @@ export function LuminaPosTerminal({
               </div>
             </div>
 
-            {/* Identificación de Cliente (Opcional) */}
+            {/* Identificación de Cliente (Opcional - Compacto) */}
             <div className="pt-0.5">
               <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">
                 Cliente / Comprobante (Opcional)
@@ -957,9 +992,9 @@ export function LuminaPosTerminal({
               </div>
             </div>
 
-            {/* Sección Ergonómica y Amplia de Pago en Efectivo, Billetes y Vuelto */}
+            {/* Sección Ergonómica y Amplia de Pago en Efectivo, Billetes y Vuelto (Tablet-Ready) */}
             {paymentMethod === "EFECTIVO" && financials.total > 0 && (
-              <div className="bg-slate-50/90 rounded-2xl p-3.5 border-2 border-slate-200 shadow-2xs space-y-3 transition-all">
+              <div className="bg-slate-50 rounded-2xl p-3.5 border-2 border-slate-200 shadow-2xs space-y-3 transition-all">
                 {/* Encabezado con Título y Botón Limpiar */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800">
@@ -973,36 +1008,53 @@ export function LuminaPosTerminal({
                         isCashManuallyModified.current = true;
                         setCashReceivedInput("");
                       }}
-                      className="text-[11px] font-bold text-slate-500 hover:text-red-600 flex items-center gap-1 transition px-2 py-0.5 rounded-md hover:bg-slate-200"
+                      className="text-xs font-bold text-slate-500 hover:text-red-600 flex items-center gap-1 transition px-2 py-0.5 rounded-lg hover:bg-slate-200 active:scale-95"
                       title="Dejar en blanco para ingresar otro monto"
                     >
-                      <X className="w-3 h-3" />
-                      <span>Limpiar</span>
+                      <X className="w-3.5 h-3.5" />
+                      <span>Limpiar monto</span>
                     </button>
                   )}
                 </div>
 
                 {/* Casilla Principal de Entrada (Grande, Clara y Fácil de Editar) */}
                 <div className="relative flex items-center">
-                  <span className="absolute left-3.5 text-lg font-black text-slate-400 select-none pointer-events-none">
+                  <span className="absolute left-3.5 text-xl font-black text-slate-400 select-none pointer-events-none">
                     S/.
                   </span>
                   <input
                     type="text"
                     inputMode="decimal"
                     value={cashReceivedInput}
+                    onFocus={(e) => {
+                      if (!isCashManuallyModified.current) {
+                        e.target.select();
+                      }
+                    }}
                     onChange={(e) => {
-                      let val = e.target.value.replace(/,/g, ".");
-                      // Permitir dejar en blanco, o números enteros/decimales con hasta 2 decimales (y en digitación "74.")
+                      let val = e.target.value.replace(/,/g, ".").replace(/\s/g, "");
                       if (val === "" || /^\d+(\.\d{0,2})?$/.test(val) || val === ".") {
                         if (val === ".") val = "0.";
                         isCashManuallyModified.current = true;
                         setCashReceivedInput(val);
                       }
                     }}
-                    placeholder={financials.total > 0 ? financials.total.toFixed(2) : "0.00"}
-                    className="w-full pl-11 pr-4 py-2.5 text-xl font-black text-slate-900 bg-white border-2 border-slate-300 focus:border-[#081C6C] rounded-xl shadow-xs focus:outline-none tabular-nums transition"
+                    placeholder="0.00"
+                    className="w-full pl-12 pr-12 py-3 text-2xl font-black text-slate-900 bg-white border-2 border-slate-300 focus:border-[#081C6C] rounded-xl shadow-xs focus:outline-none tabular-nums transition"
                   />
+                  {cashReceivedInput && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        isCashManuallyModified.current = true;
+                        setCashReceivedInput("");
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-red-600 rounded-lg transition"
+                      title="Borrar monto"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Billetes Rápidos en Soles y Botón Monto Exacto */}
@@ -1013,7 +1065,7 @@ export function LuminaPosTerminal({
                       isCashManuallyModified.current = true;
                       setCashReceivedInput(financials.total.toFixed(2));
                     }}
-                    className={`px-3 py-1.5 text-xs font-extrabold rounded-lg border-2 transition active:scale-95 ${
+                    className={`px-3 py-2 text-xs font-black rounded-lg border-2 transition active:scale-95 ${
                       cashReceived === financials.total && financials.total > 0 && cashReceivedInput !== ""
                         ? "bg-[#081C6C] text-white border-[#081C6C] shadow-xs"
                         : "bg-white text-slate-700 border-slate-200 hover:border-slate-400 hover:bg-slate-100"
@@ -1031,7 +1083,7 @@ export function LuminaPosTerminal({
                           isCashManuallyModified.current = true;
                           setCashReceivedInput(billete.toString());
                         }}
-                        className={`px-2.5 py-1.5 text-xs font-black rounded-lg border-2 transition tabular-nums active:scale-95 ${
+                        className={`px-2.5 py-2 text-xs font-black rounded-lg border-2 transition tabular-nums active:scale-95 ${
                           isSelected
                             ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
                             : "bg-white text-slate-700 border-slate-200 hover:border-slate-400 hover:bg-slate-100"
@@ -1056,15 +1108,15 @@ export function LuminaPosTerminal({
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold uppercase tracking-wide">
                       {!cashReceivedInput.trim()
-                        ? "Esperando monto..."
+                        ? "Esperando ingreso de efectivo..."
                         : financials.esMontoSuficiente
                         ? "Vuelto a entregar"
                         : "Efectivo insuficiente"}
                     </span>
                     <span
-                      className={`text-xl font-black tabular-nums ${
+                      className={`text-2xl font-black tabular-nums ${
                         !cashReceivedInput.trim()
-                          ? "text-slate-500"
+                          ? "text-slate-400"
                           : financials.esMontoSuficiente
                           ? "text-emerald-700"
                           : "text-red-600"
