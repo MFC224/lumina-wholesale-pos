@@ -13,6 +13,7 @@ import { searchInMemoryCatalog, SearchableProduct, SearchableVariant } from "@/l
 import { printThermalReceipt } from "@/lib/pos/thermal-receipt";
 import { getEligibleWholesaleTier, calculateWholesaleSavings } from "@/lib/pos/wholesale-tiers";
 import { saveCartToStorage, loadCartFromStorage, clearCartStorage } from "@/lib/pos/cart-persistence";
+import { getProductImageUrl } from "@/lib/catalog/images";
 import {
   Search,
   ShoppingCart,
@@ -31,6 +32,7 @@ import {
   X,
   Loader2,
   Tag,
+  Package,
 } from "lucide-react";
 
 export interface CartItem {
@@ -482,79 +484,161 @@ export function LuminaPosTerminal({
           </div>
         </div>
 
-        {/* Lista de Productos y Variantes */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex-1 min-h-[480px] max-h-[600px] overflow-y-auto space-y-3">
+        {/* Grilla Cuadrada de Productos (3 Cuadrados por Fila) */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex-1 min-h-[500px] max-h-[680px] overflow-y-auto">
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-16 text-slate-400 text-xs">
-              No se encontraron coincidencias para la búsqueda.
+            <div className="text-center py-20 text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
+              <Package className="w-8 h-8 text-slate-300" />
+              <span>No se encontraron coincidencias para la búsqueda.</span>
             </div>
           ) : (
-            filteredProducts.map((prod) => (
-              <div
-                key={prod.id}
-                className="p-3.5 rounded-xl border border-slate-100 hover:border-slate-300 bg-slate-50/50 hover:bg-white transition space-y-2.5"
-              >
-                {/* Cabecera del producto */}
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h4 className="font-bold text-slate-900 text-sm leading-snug">{prod.nombre}</h4>
-                    <span className="text-[11px] font-mono text-slate-400">SKU: {prod.codigoSku}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-base font-extrabold text-[#081C6C] tabular-nums block">
-                      {formatPEN(prod.precioLiquidacion)}
-                    </span>
-                    {prod.precioOriginal && prod.precioOriginal > prod.precioLiquidacion && (
-                      <span className="text-[10px] text-slate-400 line-through tabular-nums">
-                        {formatPEN(prod.precioOriginal)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {filteredProducts.map((prod) => {
+                const totalStock = prod.variantes.reduce((sum, v) => sum + v.stockActual, 0);
+                const hasCriticalVariant = prod.variantes.some((v) => v.stockActual > 0 && v.stockActual <= 3);
+                const isAllAgotado = totalStock <= 0;
+                const hasSingleVariant = prod.variantes.length === 1;
+                const imageUrl = getProductImageUrl(prod);
+
+                return (
+                  <div
+                    key={prod.id}
+                    className="bg-white rounded-2xl border border-slate-200/90 hover:border-[#081C6C] hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col justify-between p-2.5 group relative"
+                  >
+                    {/* Contenedor Cuadrado de Foto Fácil de Ver (1:1) */}
+                    <div className="aspect-square w-full rounded-xl overflow-hidden bg-slate-100 relative mb-2 flex items-center justify-center shrink-0">
+                      <img
+                        src={imageUrl}
+                        alt={prod.nombre}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.style.display = "none";
+                          if (target.parentElement) {
+                            target.parentElement.classList.add("bg-gradient-to-br", "from-slate-100", "to-slate-200");
+                          }
+                        }}
+                      />
+
+                      {/* Icono de Respaldo detrás de la imagen */}
+                      <Package className="w-8 h-8 text-slate-300 absolute pointer-events-none -z-10" />
+
+                      {/* Badge SKU */}
+                      <span className="absolute top-1.5 left-1.5 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-mono px-1.5 py-0.5 rounded font-bold shadow-xs">
+                        {prod.codigoSku || "LIQ"}
                       </span>
-                    )}
-                  </div>
-                </div>
 
-                {/* Variantes disponibles para agregar con 1 click */}
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {prod.variantes.map((v) => {
-                    const isCritico = v.stockActual > 0 && v.stockActual <= 3;
-                    const isAgotado = v.stockActual <= 0;
-
-                    return (
-                      <button
-                        key={v.id}
-                        type="button"
-                        disabled={isAgotado}
-                        onClick={() => addToCart(prod, v)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition active:scale-95 ${
-                          isAgotado
-                            ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60"
-                            : isCritico
-                            ? "bg-red-50 text-red-700 border-red-300 hover:bg-red-100"
-                            : "bg-white text-slate-700 border-slate-200 hover:border-[#081C6C] hover:text-[#081C6C]"
-                        }`}
-                      >
-                        <span>
-                          {v.talla && v.talla !== "Única" ? v.talla : ""}
-                          {v.color && v.color !== "Estándar" ? ` · ${v.color}` : ""}
-                          {!v.talla && !v.color ? "Unidad" : ""}
+                      {/* Badge de Stock en la Foto */}
+                      {isAllAgotado ? (
+                        <span className="absolute top-1.5 right-1.5 bg-slate-800/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">
+                          AGOTADO
                         </span>
+                      ) : hasCriticalVariant ? (
+                        <span className="absolute top-1.5 right-1.5 bg-red-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded animate-pulse shadow-xs">
+                          ⚠️ {totalStock} un.
+                        </span>
+                      ) : (
+                        <span className="absolute top-1.5 right-1.5 bg-emerald-600/90 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-xs">
+                          {totalStock} un.
+                        </span>
+                      )}
 
-                        <span
-                          className={`px-1.5 py-0.2 rounded text-[10px] font-bold tabular-nums ${
-                            isAgotado
-                              ? "bg-slate-200 text-slate-500"
-                              : isCritico
-                              ? "bg-red-200/80 text-red-800 animate-stock-critical"
-                              : "bg-emerald-100 text-emerald-800"
-                          }`}
+                      {/* Botón rápido sobre la foto si tiene 1 sola variante con stock */}
+                      {hasSingleVariant && !isAllAgotado && (
+                        <button
+                          type="button"
+                          onClick={() => addToCart(prod, prod.variantes[0])}
+                          className="absolute inset-0 bg-[#081C6C]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1 backdrop-blur-[1px]"
+                          title="Añadir al carrito"
                         >
-                          {v.stockActual}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
+                          <Plus className="w-4 h-4" />
+                          <span>Añadir</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Información del Producto */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <h4
+                          className="font-bold text-slate-900 text-xs leading-snug line-clamp-2 h-8"
+                          title={prod.nombre}
+                        >
+                          {prod.nombre}
+                        </h4>
+
+                        <div className="flex items-baseline justify-between mt-1.5">
+                          <span className="text-sm font-black text-[#081C6C] tabular-nums">
+                            {formatPEN(prod.precioLiquidacion)}
+                          </span>
+                          {prod.precioOriginal && prod.precioOriginal > prod.precioLiquidacion && (
+                            <span className="text-[10px] text-slate-400 line-through tabular-nums">
+                              {formatPEN(prod.precioOriginal)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Variantes / Acción de Compra */}
+                      <div className="mt-2 pt-1.5 border-t border-slate-100">
+                        {prod.variantes.length > 1 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {prod.variantes.map((v) => {
+                              const isCritico = v.stockActual > 0 && v.stockActual <= 3;
+                              const isAgotado = v.stockActual <= 0;
+
+                              return (
+                                <button
+                                  key={v.id}
+                                  type="button"
+                                  disabled={isAgotado}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    addToCart(prod, v);
+                                  }}
+                                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border transition active:scale-95 ${
+                                    isAgotado
+                                      ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-50"
+                                      : isCritico
+                                      ? "bg-red-50 text-red-700 border-red-300 hover:bg-red-100"
+                                      : "bg-slate-50 text-slate-700 border-slate-200 hover:border-[#081C6C] hover:bg-[#081C6C] hover:text-white"
+                                  }`}
+                                  title={`${v.talla ? `Talla: ${v.talla} ` : ""}${v.color ? `Color: ${v.color}` : ""}`}
+                                >
+                                  <span>{v.talla && v.talla !== "Única" ? v.talla : v.color || "U"}</span>
+                                  <span
+                                    className={`text-[9px] tabular-nums ${
+                                      isCritico ? "text-red-700 font-extrabold" : isAgotado ? "text-slate-400" : "text-slate-500"
+                                    }`}
+                                  >
+                                    ({v.stockActual})
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={isAllAgotado}
+                            onClick={() => addToCart(prod, prod.variantes[0])}
+                            className={`w-full py-1 px-2 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 active:scale-95 ${
+                              isAllAgotado
+                                ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 hover:border-emerald-600"
+                            }`}
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>{isAllAgotado ? "Agotado" : "Agregar"}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

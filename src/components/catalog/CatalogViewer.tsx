@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { UserProfile } from "@/types/auth";
 import { formatPEN } from "@/lib/utils";
+import { getProductImageUrl } from "@/lib/catalog/images";
 import {
   Search,
   Tag,
@@ -119,31 +120,46 @@ export function CatalogViewer({ currentUser, initialProducts = [] }: CatalogView
                   : "border-slate-200 hover:border-slate-300 shadow-sm hover:shadow"
               }`}
             >
-              <div className="p-5 space-y-3">
-                {/* Categoría y Badges */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
-                    {product.categoriaNombre || "Liquidación"}
+              {/* Foto Cuadrada Fácil de Ver */}
+              <div className="aspect-square w-full bg-slate-100 relative overflow-hidden flex items-center justify-center shrink-0">
+                <img
+                  src={getProductImageUrl(product)}
+                  alt={product.nombre}
+                  loading="lazy"
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.style.display = "none";
+                    if (target.parentElement) {
+                      target.parentElement.classList.add("bg-gradient-to-br", "from-slate-100", "to-slate-200");
+                    }
+                  }}
+                />
+                <Package className="w-10 h-10 text-slate-300 absolute pointer-events-none -z-10" />
+
+                <span className="absolute top-2.5 left-2.5 text-[10px] font-semibold text-slate-900 bg-white/90 backdrop-blur-xs px-2.5 py-0.5 rounded-full shadow-xs">
+                  {product.categoriaNombre || "Liquidación"}
+                </span>
+
+                {metrics.tieneAlertaCritica ? (
+                  <span className="absolute top-2.5 right-2.5 flex items-center gap-1 text-[10px] font-bold text-red-700 bg-white/95 px-2 py-0.5 rounded-full border border-red-300 animate-stock-critical shadow-xs">
+                    <AlertCircle className="w-3 h-3 text-red-600" /> Stock Crítico (≤ 3)
                   </span>
+                ) : metrics.totalStockActual === 0 ? (
+                  <span className="absolute top-2.5 right-2.5 text-[10px] font-bold text-slate-600 bg-slate-200/95 px-2 py-0.5 rounded-full shadow-xs">
+                    Agotado
+                  </span>
+                ) : (
+                  <span className="absolute top-2.5 right-2.5 flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white/95 px-2 py-0.5 rounded-full border border-emerald-200 shadow-xs">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" /> {metrics.totalStockActual} un.
+                  </span>
+                )}
+              </div>
 
-                  {metrics.tieneAlertaCritica ? (
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full border border-red-300 animate-stock-critical">
-                      <AlertCircle className="w-3 h-3 text-red-600" /> Stock Crítico (≤ 3)
-                    </span>
-                  ) : metrics.totalStockActual === 0 ? (
-                    <span className="text-[11px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full">
-                      Agotado
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" /> En Stock ({metrics.totalStockActual})
-                    </span>
-                  )}
-                </div>
-
+              <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
                 {/* Título y SKU */}
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base leading-snug line-clamp-2">
+                  <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2">
                     {product.nombre}
                   </h3>
                   <p className="text-xs font-mono text-slate-400 mt-0.5">
