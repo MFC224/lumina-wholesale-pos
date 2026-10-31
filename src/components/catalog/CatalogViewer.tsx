@@ -135,7 +135,7 @@ export function CatalogViewer({ currentUser, initialProducts = [] }: CatalogView
                     }
                   }}
                 />
-                <Package className="w-10 h-10 text-slate-300 absolute pointer-events-none -z-10" />
+                <Package className="w-10 h-10 text-slate-300 absolute pointer-events-none" />
 
                 <span className="absolute top-2.5 left-2.5 text-[10px] font-semibold text-slate-900 bg-white/90 backdrop-blur-xs px-2.5 py-0.5 rounded-full shadow-xs">
                   {product.categoriaNombre || "Liquidación"}

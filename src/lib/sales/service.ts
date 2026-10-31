@@ -47,9 +47,10 @@ export async function procesarVentaDb(input: CreateSaleInput): Promise<ProcessSa
       let descuentoMonto = 0;
       const tipoDescuento = (input.tipoDescuento as TipoDescuento) || TipoDescuento.NINGUNO;
       if (tipoDescuento === TipoDescuento.PORCENTAJE && input.descuento) {
-        descuentoMonto = Math.round((subtotal * (input.descuento / 100)) * 100) / 100;
+        const pct = Math.min(100, Math.max(0, input.descuento));
+        descuentoMonto = Math.round((subtotal * (pct / 100)) * 100) / 100;
       } else if (tipoDescuento === TipoDescuento.MONTO_FIJO && input.descuento) {
-        descuentoMonto = Math.min(subtotal, Math.round(input.descuento * 100) / 100);
+        descuentoMonto = Math.min(subtotal, Math.max(0, Math.round(input.descuento * 100) / 100));
       }
 
       const total = Math.max(0, Math.round((subtotal - descuentoMonto) * 100) / 100);

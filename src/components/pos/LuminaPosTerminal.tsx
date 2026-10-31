@@ -217,6 +217,14 @@ export function LuminaPosTerminal({
   // Atajos globales de teclado (Keyboard-First POS)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Inhibir atajos de venta si hay un modal abierto en pantalla
+      const isAnyModalOpen = typeof document !== "undefined" && Boolean(
+        document.querySelector(".fixed.inset-0.z-50")
+      );
+      if (isAnyModalOpen && !completedSale) {
+        return;
+      }
+
       // F11 o P para imprimir ticket térmico si el modal de venta exitosa está visible
       if (completedSale && (e.key === "F11" || e.key.toLowerCase() === "p")) {
         e.preventDefault();
@@ -411,7 +419,7 @@ export function LuminaPosTerminal({
           precioUnitario: c.precioUnitario,
         })),
         metodoPago: paymentMethod,
-        descuento: financials.descuentoMonto,
+        descuento: discountType === "PORCENTAJE" ? discountValue : financials.descuentoMonto,
         tipoDescuento: discountType,
         montoRecibido: financials.montoRecibido,
       };
@@ -531,7 +539,7 @@ export function LuminaPosTerminal({
                       />
 
                       {/* Icono de Respaldo detrás de la imagen */}
-                      <Package className="w-8 h-8 text-slate-300 absolute pointer-events-none -z-10" />
+                      <Package className="w-8 h-8 text-slate-300 absolute pointer-events-none" />
 
                       {/* Badge SKU */}
                       <span className="absolute top-1.5 left-1.5 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-mono px-1.5 py-0.5 rounded font-bold shadow-xs">
@@ -701,7 +709,7 @@ export function LuminaPosTerminal({
                     <div className="flex items-center gap-1.5 truncate">
                       <p className="font-bold text-slate-800 truncate">{item.nombre}</p>
                       {item.stockDisponible <= 3 && (
-                        <span className="shrink-0 text-[9px] font-bold text-red-700 bg-red-100 border border-red-200 px-1.5 py-0.2 rounded animate-pulse">
+                        <span className="shrink-0 text-[9px] font-bold text-red-700 bg-red-100 border border-red-200 px-1.5 py-0.5 rounded animate-pulse">
                           ⚠️ {item.stockDisponible} un.
                         </span>
                       )}
@@ -1006,7 +1014,7 @@ export function LuminaPosTerminal({
                       setCashReceivedInput(financials.total.toFixed(2));
                     }}
                     className={`px-3 py-1.5 text-xs font-extrabold rounded-lg border-2 transition active:scale-95 ${
-                      cashReceived === financials.total && cashReceivedInput === financials.total.toFixed(2)
+                      cashReceived === financials.total && financials.total > 0 && cashReceivedInput !== ""
                         ? "bg-[#081C6C] text-white border-[#081C6C] shadow-xs"
                         : "bg-white text-slate-700 border-slate-200 hover:border-slate-400 hover:bg-slate-100"
                     }`}
@@ -1014,7 +1022,7 @@ export function LuminaPosTerminal({
                     Monto Exacto
                   </button>
                   {BILLETES_PERU.map((billete) => {
-                    const isSelected = cashReceived === billete && cashReceivedInput === billete.toString();
+                    const isSelected = Math.abs(cashReceived - billete) < 0.001 && cashReceivedInput !== "";
                     return (
                       <button
                         key={billete}

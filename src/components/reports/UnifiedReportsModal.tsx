@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { UserProfile } from "@/types/auth";
 import { formatPEN } from "@/lib/utils";
 import { calcularArqueoCaja } from "@/lib/reports/cash-closing";
@@ -41,6 +41,18 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
 
   // Estados para Reporte Excel
   const [downloadingExcel, setDownloadingExcel] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -129,7 +141,12 @@ export function UnifiedReportsModal({ isOpen, onClose, currentUser }: UnifiedRep
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+    >
       <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header Modal */}
         <div className="px-6 py-4 bg-gradient-to-r from-[#081C6C] to-[#0A2688] text-white flex items-center justify-between">

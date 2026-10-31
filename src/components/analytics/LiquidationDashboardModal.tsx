@@ -104,6 +104,19 @@ export function LiquidationDashboardModal({ isOpen, onClose }: LiquidationDashbo
     }
   }, [isOpen, preset, fetchKpis]);
 
+  // Cierre accesible con tecla Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Preparar segmentos del Diagrama de Pastel
   const pieSegments: PieSegment[] = useMemo(() => {
     if (!kpis) return [];
@@ -142,15 +155,39 @@ export function LiquidationDashboardModal({ isOpen, onClose }: LiquidationDashbo
     return Math.max(...kpis.rankingVendedores.map((v) => v.totalVendidoPEN), 1);
   }, [kpis]);
 
-  if (!isOpen) return null;
+  // Suma exacta de ventas de los vendedores en el ranking
+  const totalVentasVendedores = useMemo(() => {
+    if (!kpis?.rankingVendedores) return 0;
+    return kpis.rankingVendedores.reduce((sum, v) => sum + v.totalVendidoPEN, 0);
+  }, [kpis]);
 
-  // Render SVG Donut Chart Paths
+  // Render SVG Donut Chart Paths de forma pura (React 19)
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
-  let accumulatedPercent = 0;
+
+  const calculatedSegments = useMemo(() => {
+    let acc = 0;
+    return pieSegments.map((segment) => {
+      const strokeDasharray = `${(segment.percent / 100) * circumference} ${circumference}`;
+      const strokeDashoffset = -((acc / 100) * circumference);
+      acc += segment.percent;
+      return {
+        ...segment,
+        strokeDasharray,
+        strokeDashoffset,
+      };
+    });
+  }, [pieSegments, circumference]);
+
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
+    >
       <div className="bg-white w-full max-w-6xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[94vh]">
         {/* Header Ejecutivo */}
         <div className="px-6 py-4 bg-[#081C6C] text-white flex items-center justify-between shadow-xs">
@@ -396,11 +433,7 @@ export function LiquidationDashboardModal({ isOpen, onClose }: LiquidationDashbo
                           />
 
                           {/* Segmentos de Dona */}
-                          {pieSegments.map((segment, idx) => {
-                            const strokeDasharray = `${(segment.percent / 100) * circumference} ${circumference}`;
-                            const strokeDashoffset = -((accumulatedPercent / 100) * circumference);
-                            accumulatedPercent += segment.percent;
-
+                          {calculatedSegments.map((segment, idx) => {
                             const isHovered = hoveredSlice === idx;
 
                             return (
@@ -412,8 +445,8 @@ export function LiquidationDashboardModal({ isOpen, onClose }: LiquidationDashbo
                                 fill="transparent"
                                 stroke={segment.color}
                                 strokeWidth={isHovered ? 15 : 12}
-                                strokeDasharray={strokeDasharray}
-                                strokeDashoffset={strokeDashoffset}
+                                strokeDasharray={segment.strokeDasharray}
+                                strokeDashoffset={segment.strokeDashoffset}
                                 className="transition-all duration-300 cursor-pointer"
                                 style={{
                                   opacity: hoveredSlice !== null && !isHovered ? 0.45 : 1,
@@ -551,7 +584,7 @@ export function LiquidationDashboardModal({ isOpen, onClose }: LiquidationDashbo
                       Total Ventas Vendedores
                     </span>
                     <strong className="text-sm font-black text-slate-900 tabular-nums">
-                      {formatPEN(kpis.totalVentasPEN)}
+                      {formatPEN(totalVentasVendedores)}
                     </strong>
                   </div>
                 </div>
@@ -563,31 +596,38 @@ export function LiquidationDashboardModal({ isOpen, onClose }: LiquidationDashbo
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {kpis.rankingVendedores.slice(0, 4).map((seller, index) => {
-                      // Insignias y Medallas del Podio
-                      let medalIcon = <Award className="w-4 h-4 text-slate-400" />;
-                      let medalBadge = "4º Lugar";
+                      // Insignias y Medallas del Podio condicionales a tener ventas
+                      const hasSales = seller.totalVendidoPEN > 0;
+                      let medalIcon = <Users className="w-4 h-4 text-slate-400" />;
+                      let medalBadge = "Caja en Espera";
                       let cardBorder = "border-slate-200";
-                      let headerBg = "bg-slate-50 text-slate-700";
+                      let headerBg = "bg-slate-50 text-slate-600";
                       let rankBadge = "bg-slate-200 text-slate-700";
 
-                      if (index === 0) {
+                      if (index === 0 && hasSales) {
                         medalIcon = <Crown className="w-5 h-5 text-amber-500 animate-pulse" />;
                         medalBadge = "🥇 1º Líder de Ventas";
                         cardBorder = "border-amber-300 ring-2 ring-amber-100";
                         headerBg = "bg-gradient-to-r from-amber-50 to-amber-100/70 text-amber-900";
                         rankBadge = "bg-amber-500 text-white shadow-xs";
-                      } else if (index === 1) {
+                      } else if (index === 1 && hasSales) {
                         medalIcon = <Award className="w-4 h-4 text-slate-400" />;
                         medalBadge = "🥈 2º Segundo Lugar";
                         cardBorder = "border-slate-300";
                         headerBg = "bg-slate-100/80 text-slate-800";
                         rankBadge = "bg-slate-400 text-white shadow-xs";
-                      } else if (index === 2) {
+                      } else if (index === 2 && hasSales) {
                         medalIcon = <Award className="w-4 h-4 text-amber-700" />;
                         medalBadge = "🥉 3º Tercer Lugar";
                         cardBorder = "border-amber-200";
                         headerBg = "bg-amber-50/50 text-amber-800";
                         rankBadge = "bg-amber-700 text-white shadow-xs";
+                      } else if (hasSales) {
+                        medalIcon = <Award className="w-4 h-4 text-slate-400" />;
+                        medalBadge = `${index + 1}º Lugar`;
+                        cardBorder = "border-slate-200";
+                        headerBg = "bg-slate-50 text-slate-700";
+                        rankBadge = "bg-slate-200 text-slate-700";
                       }
 
                       const relativeProgress =
@@ -636,7 +676,7 @@ export function LiquidationDashboardModal({ isOpen, onClose }: LiquidationDashbo
                                 <span className="text-xl font-black text-[#081C6C] tabular-nums">
                                   {formatPEN(seller.totalVendidoPEN)}
                                 </span>
-                                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                                   {seller.porcentajeTotal}% del total
                                 </span>
                               </div>

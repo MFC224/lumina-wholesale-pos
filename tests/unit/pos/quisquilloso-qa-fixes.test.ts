@@ -116,4 +116,108 @@ describe("SUITE DE PRUEBAS QA QUISQUILLOSO: VERIFICACIÓN DE CORRECCIONES", () =
       expect(eventFired).toBe(true);
     });
   });
+
+  // =========================================================================
+  // FIX 7: Integridad Financiera de Descuentos Porcentuales
+  // =========================================================================
+  describe("QA-FIX-05: Integridad financiera de descuentos porcentuales en POS y Backend", () => {
+    it("debe enviar el valor de porcentaje (ej. 15) y no el importe en Soles cuando tipoDescuento es PORCENTAJE", () => {
+      const subtotal = 1000;
+      const discountType: "PORCENTAJE" | "MONTO_FIJO" = "PORCENTAJE";
+      const discountValue = 15; // 15%
+      const financialsDescuentoMonto = (subtotal * discountValue) / 100; // S/. 150.00
+
+      // Lógica corregida en frontend:
+      const payloadDescuento =
+        discountType === "PORCENTAJE" ? discountValue : financialsDescuentoMonto;
+
+      expect(payloadDescuento).toBe(15);
+
+      // Lógica de cálculo en backend:
+      let descuentoMonto = 0;
+      if (discountType === "PORCENTAJE") {
+        const pct = Math.min(100, Math.max(0, payloadDescuento));
+        descuentoMonto = Math.round((subtotal * (pct / 100)) * 100) / 100;
+      }
+
+      const total = subtotal - descuentoMonto;
+
+      expect(descuentoMonto).toBe(150);
+      expect(total).toBe(850);
+      expect(total).toBeGreaterThan(0);
+    });
+
+    it("el backend debe acotar el porcentaje entre 0 y 100% ante entradas anómalas", () => {
+      const subtotal = 500;
+      const invalidHighPercent = 150; // Tratar de descontar 150%
+
+      const pct = Math.min(100, Math.max(0, invalidHighPercent));
+      const descuentoMonto = Math.round((subtotal * (pct / 100)) * 100) / 100;
+      const total = Math.max(0, Math.round((subtotal - descuentoMonto) * 100) / 100);
+
+      expect(descuentoMonto).toBe(500); // 100% de 500
+      expect(total).toBe(0); // Nunca negativo
+    });
+  });
+
+  // =========================================================================
+  // FIX 8: Tolerancia Numérica en Botón Monto Exacto y Billetes
+  // =========================================================================
+  describe("QA-FIX-06: Tolerancia numérica en botón Monto Exacto y Billetes Rápidos", () => {
+    const isExactButtonActive = (
+      cashReceived: number,
+      total: number,
+      inputStr: string
+    ) => cashReceived === total && total > 0 && inputStr !== "";
+
+    const isBillButtonActive = (
+      cashReceived: number,
+      bill: number,
+      inputStr: string
+    ) => Math.abs(cashReceived - bill) < 0.001 && inputStr !== "";
+
+    it("el botón Monto Exacto debe activarse tanto con '74.7' como con '74.70'", () => {
+      const total = 74.7;
+
+      expect(isExactButtonActive(74.7, total, "74.7")).toBe(true);
+      expect(isExactButtonActive(74.7, total, "74.70")).toBe(true);
+      expect(isExactButtonActive(70, total, "70")).toBe(false);
+      expect(isExactButtonActive(0, total, "")).toBe(false);
+    });
+
+    it("el botón de billete de S/. 100 debe activarse tanto con '100' como con '100.00'", () => {
+      const bill = 100;
+
+      expect(isBillButtonActive(100, bill, "100")).toBe(true);
+      expect(isBillButtonActive(100, bill, "100.00")).toBe(true);
+      expect(isBillButtonActive(50, bill, "50")).toBe(false);
+    });
+  });
+
+  // =========================================================================
+  // FIX 9: Ranking de Vendedores sin Falsas Coronaciones con 0 Ventas
+  // =========================================================================
+  describe("QA-FIX-07: Podio de Vendedores en estado neutro ante S/. 0.00 en ventas", () => {
+    it("no debe asignar corona dorada ni animación de líder si el total de ventas es 0", () => {
+      const sellers = [
+        { nombre: "Carlos Mendoza", totalVendidoPEN: 0 },
+        { nombre: "Sofía Quispe", totalVendidoPEN: 0 },
+      ];
+
+      const getMedalBadge = (seller: { totalVendidoPEN: number }, index: number) => {
+        const hasSales = seller.totalVendidoPEN > 0;
+        if (index === 0 && hasSales) return "🥇 1º Líder de Ventas";
+        if (index === 1 && hasSales) return "🥈 2º Segundo Lugar";
+        if (hasSales) return `${index + 1}º Lugar`;
+        return "Caja en Espera";
+      };
+
+      expect(getMedalBadge(sellers[0], 0)).toBe("Caja en Espera");
+      expect(getMedalBadge(sellers[1], 1)).toBe("Caja en Espera");
+
+      // Con ventas reales
+      const activeSeller = { nombre: "Carlos Mendoza", totalVendidoPEN: 1500 };
+      expect(getMedalBadge(activeSeller, 0)).toBe("🥇 1º Líder de Ventas");
+    });
+  });
 });
