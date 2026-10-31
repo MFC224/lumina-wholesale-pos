@@ -2,9 +2,9 @@ import { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Lumina Wholesale & Liquidation POS",
-    short_name: "Lumina POS",
-    description: "Sistema Interno de Inventario y Terminal de Remate de Liquidación",
+    name: "Import L&R — Sistema POS & Inventario",
+    short_name: "Import L&R",
+    description: "Sistema Interno de Inventario y Terminal Punto de Venta Import L&R",
     start_url: "/",
     display: "standalone",
     background_color: "#061655",

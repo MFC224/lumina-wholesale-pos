@@ -211,7 +211,7 @@ export function renderCashClosingHtml(doc: CashClosingReportDocument): string {
 </head>
 <body>
   <div class="header">
-    <div class="logo-box">LUMINA <span>WHOLESALE</span></div>
+    <div class="logo-box">IMPORT <span>L&R</span></div>
     <div class="doc-meta">
       <div>Acta N°: <strong>${doc.id}</strong></div>
       <div>Fecha Emisión: ${new Date(doc.fechaCierre).toLocaleDateString("es-PE")}</div>

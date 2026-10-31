@@ -33,7 +33,7 @@ const PERCENT_NUM_FMT = '0.00"%"';
  */
 export async function generateExecutiveExcelReport(data: ExecutiveReportData): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Lumina Wholesale & Liquidation POS";
+  workbook.creator = "Import L&R POS";
   workbook.created = new Date();
 
   const isCostVisible = canViewCosts(data.solicitanteRol);
@@ -48,7 +48,7 @@ export async function generateExecutiveExcelReport(data: ExecutiveReportData): P
   // Título
   sheetResumen.mergeCells("B2:E2");
   const titleCell = sheetResumen.getCell("B2");
-  titleCell.value = "LUMINA WHOLESALE & LIQUIDATION - RESUMEN EJECUTIVO";
+  titleCell.value = "IMPORT L&R - RESUMEN EJECUTIVO";
   titleCell.font = { name: "Inter", size: 14, bold: true, color: { argb: "FF081C6C" } };
 
   sheetResumen.getCell("B3").value = `Período: ${new Date(data.fechaInicio).toLocaleDateString()} al ${new Date(data.fechaFin).toLocaleDateString()} | Generado por: ${data.solicitanteNombre} (${data.solicitanteRol})`;

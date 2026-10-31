@@ -39,10 +39,10 @@ describe("Thermal Receipt Generator (HU-Voucher 80mm/58mm)", () => {
     ],
   };
 
-  it("debe contener el encabezado oficial de Lumina y RUC", () => {
+  it("debe contener el encabezado oficial de Import L&R y RUC", () => {
     const html = generateThermalReceiptHtml(sampleData);
-    expect(html).toContain("LUMINA WHOLESALE");
-    expect(html).toContain("LIQUIDACIÓN & REMATE DE ALMACÉN");
+    expect(html).toContain("IMPORT L&R");
+    expect(html).toContain("IMPORTACIÓN & VENTAS AL POR MAYOR");
     expect(html).toContain("RUC: 20608945123");
     expect(html).toContain("SOLES (S/.)");
   });

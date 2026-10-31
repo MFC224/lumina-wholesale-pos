@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Lumina Wholesale & Liquidation POS",
-  description: "Sistema de inventario interno de alta velocidad y remate de liquidación para almacén",
+  title: "Import L&R — Sistema POS & Inventario",
+  description: "Sistema interno de inventario de alta velocidad y punto de venta para Import L&R",
 };
 
 export default function RootLayout({

@@ -126,7 +126,7 @@ describe("HU-10: Reportes de Arqueo y Cierre Diario de Caja en Soles (PDF/HTML)"
     });
 
     const html = renderCashClosingHtml(doc);
-    expect(html).toContain("LUMINA");
+    expect(html).toContain("IMPORT");
     expect(html).toContain("Acta Oficial de Arqueo y Cierre Diario de Caja");
     expect(html).toContain("CIERRE-TEST-100");
     expect(html).toContain(LEYENDA_LIQUIDACION_OBLIGATORIA);

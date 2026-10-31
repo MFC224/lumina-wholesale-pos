@@ -173,8 +173,8 @@ export function generateThermalReceiptHtml(data: ThermalReceiptData, paperWidth:
   ${data.esDevolucion ? `<div class="watermark-anulada">*** NOTA DE CRÉDITO / DEVOLUCIÓN ***</div>` : data.anulada ? `<div class="watermark-anulada">*** TICKET ANULADO ***</div>` : ""}
 
   <div class="text-center">
-    <div class="brand-title">LUMINA WHOLESALE</div>
-    <div class="brand-sub">${data.esDevolucion ? "COMPROBANTE DE REEMBOLSO PARCIAL" : "LIQUIDACIÓN & REMATE DE ALMACÉN"}</div>
+    <div class="brand-title">IMPORT L&R</div>
+    <div class="brand-sub">${data.esDevolucion ? "COMPROBANTE DE REEMBOLSO PARCIAL" : "IMPORTACIÓN & VENTAS AL POR MAYOR"}</div>
     <div style="font-size: 9px; margin-top: 2px;">RUC: 20608945123</div>
     <div style="font-size: 9px;">LIMA - PERÚ &bull; MONEDA: SOLES (S/.)</div>
   </div>
@@ -298,7 +298,7 @@ export function generateThermalReceiptHtml(data: ThermalReceiptData, paperWidth:
   }
 
   <div class="text-center" style="margin-top: 10px; font-size: 9px;">
-    ¡Gracias por su compra en Lumina Remate!
+    ¡Gracias por su compra en Import L&R!
   </div>
 
   <script>
@@ -423,7 +423,7 @@ export function generateThermalCashClosingHtml(
 </head>
 <body>
   <div class="text-center">
-    <div class="brand-title">LUMINA WHOLESALE</div>
+    <div class="brand-title">IMPORT L&R</div>
     <div style="font-size: 9px;">RUC: 20608945123 &bull; LIMA - PERÚ</div>
     <div class="banner-z">*** REPORTE DE CIERRE Z ***</div>
   </div>
@@ -482,7 +482,7 @@ export function generateThermalCashClosingHtml(
   </table>
 
   <div class="text-center" style="margin-top: 15px; font-size: 8.5px; color: #444;">
-    SISTEMA LUMINA POS &bull; PERÚ
+    SISTEMA IMPORT L&R &bull; PERÚ
   </div>
 
   <script>

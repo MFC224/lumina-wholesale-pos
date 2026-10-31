@@ -108,10 +108,14 @@ export function PinPad({
 
   return (
     <div className="w-full max-w-md mx-auto p-8 bg-white rounded-2xl shadow-xl border border-slate-200">
-      {/* Encabezado */}
+      {/* Encabezado con Logo Oficial Import L&R */}
       <div className="text-center mb-6">
-        <div className="w-14 h-14 mx-auto mb-3 bg-[#081C6C]/10 rounded-2xl flex items-center justify-center text-[#081C6C]">
-          <Lock className="w-7 h-7" />
+        <div className="flex justify-center mb-4">
+          <img
+            src="/logo-lr.png"
+            alt="Logo Import L&R"
+            className="h-14 w-auto object-contain drop-shadow-xs"
+          />
         </div>
         <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{title}</h2>
         <p className="text-sm text-slate-500 mt-1">{subtitle}</p>

@@ -144,7 +144,7 @@ export default function HomePage() {
       <div className="min-h-screen flex items-center justify-center bg-slate-100">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-[#081C6C] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium text-slate-600">Iniciando terminal Lumina POS...</p>
+          <p className="text-sm font-medium text-slate-600">Iniciando terminal Import L&amp;R...</p>
         </div>
       </div>
     );
@@ -156,22 +156,24 @@ export default function HomePage() {
       <header className="bg-gradient-to-r from-[#061655] via-[#081C6C] to-[#0A2688] text-white shadow-md sticky top-0 z-40 px-4 md:px-6 py-2.5 flex items-center justify-between gap-4">
         {/* Isotipo & Tipografía de Marca */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-700 p-0.5 shadow-sm">
-            <div className="w-full h-full bg-[#081C6C] rounded-[10px] flex items-center justify-center font-black text-xl text-emerald-400">
-              L
-            </div>
+          <div className="h-10 px-2 py-1 bg-white rounded-xl shadow-xs border border-white/20 flex items-center justify-center">
+            <img
+              src="/logo-lr.png"
+              alt="Logo Import L&R"
+              className="h-7 w-auto object-contain"
+            />
           </div>
           <div>
             <h1 className="text-sm md:text-base font-extrabold tracking-tight text-white flex items-center gap-2 leading-tight">
               <span className="bg-gradient-to-r from-white via-slate-100 to-emerald-200 bg-clip-text text-transparent">
-                Lumina Wholesale &amp; Liquidation
+                Import L&amp;R
               </span>
               <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
                 Producción
               </span>
             </h1>
             <p className="text-[11px] text-slate-300/85 font-normal leading-none mt-0.5">
-              Sistema Interno de Inventario y Caja de Remate
+              Sistema Interno de Inventario y Ventas
             </p>
           </div>
         </div>
@@ -277,7 +279,7 @@ export default function HomePage() {
           <div className="w-full max-w-md mx-auto my-auto py-12">
             <PinPad
               onSuccess={handleLoginSuccess}
-              title="Terminal de Caja Lumina"
+              title="Terminal de Caja — Import L&R"
               subtitle="Ingrese PIN de 4 dígitos (Prueba: Admin '9999' o Vendedor '1234')"
             />
             <div className="mt-6 text-center text-xs text-slate-400 space-y-1">
@@ -290,7 +292,7 @@ export default function HomePage() {
             <div className="flex items-center justify-between pb-1">
               <div>
                 <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                  Punto de Venta Interactivo &mdash; Lumina Wholesale POS
+                  Punto de Venta Interactivo &mdash; Import L&amp;R
                   <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
                     Atajos: F2 Buscar · F4 Cobrar
                   </span>
@@ -416,7 +418,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="text-center py-4 text-xs text-slate-400 border-t border-slate-200">
-        Lumina Wholesale & Liquidation POS &copy; {new Date().getFullYear()} &mdash; Moneda Oficial: Soles (S/.)
+        Import L&amp;R POS &copy; {new Date().getFullYear()} &mdash; Moneda Oficial: Soles (S/.)
       </footer>
     </div>
   );
