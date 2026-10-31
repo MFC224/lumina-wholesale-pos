@@ -30,10 +30,10 @@ describe("Módulo de Imágenes Curadas para Catálogo Cuadrado (3 por fila)", ()
 
   it("debe inferir imagen por palabras clave en el nombre si la categoría es null", () => {
     const prod1 = { nombre: "Casaca Impermeable de Invierno" };
-    expect(getProductImageUrl(prod1)).toBe(CATEGORY_FALLBACK_IMAGES["Ropa y Textiles"]);
+    expect(getProductImageUrl(prod1)).toBe(PRODUCT_SPECIFIC_IMAGES["CAS-CRV-18"]);
 
     const prod2 = { nombre: "Guantes de protección dieléctrica" };
-    expect(getProductImageUrl(prod2)).toBe(CATEGORY_FALLBACK_IMAGES["Equipos de Protección (EPP)"]);
+    expect(getProductImageUrl(prod2)).toBe(PRODUCT_SPECIFIC_IMAGES["GUA-NIT-40"]);
   });
 
   it("debe retornar la imagen general si ningún criterio coincide", () => {

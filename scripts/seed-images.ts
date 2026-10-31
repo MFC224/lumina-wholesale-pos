@@ -14,7 +14,7 @@ async function main() {
     const imgUrl = getProductImageUrl({
       codigoSku: prod.codigoSku,
       categoriaNombre: prod.categoria?.nombre,
-      imagenUrl: prod.imagenUrl,
+      imagenUrl: null, // Forzar obtención de la nueva imagen específica por SKU
       nombre: prod.nombre
     });
 
