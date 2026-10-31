@@ -1,5 +1,6 @@
 import { PrismaClient, Rol, TipoMovimiento } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { PRODUCT_SPECIFIC_IMAGES } from "../src/lib/catalog/images";
 
 const prisma = new PrismaClient();
 
@@ -812,6 +813,7 @@ async function main() {
         precioOriginal: p.precioOriginal,
         precioLiquidacion: p.precioLiquidacion,
         costo: p.costo,
+        imagenUrl: PRODUCT_SPECIFIC_IMAGES[p.sku] || null,
         activo: true,
       },
     });
